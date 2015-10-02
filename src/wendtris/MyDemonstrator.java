@@ -721,6 +721,7 @@ constraintsJTabbedPane1.gridheight = 2;
 }
 /**
  * Den Eigenschaftswert JLabel1 zurückgeben.
+ * JLabel1 Price per ResUnit
  * @return javax.swing.JLabel
  */
 /* WARNUNG: DIESE METHODE WIRD ERNEUT GENERIERT. */
@@ -742,6 +743,7 @@ private javax.swing.JLabel getJLabel1() {
 }
 /**
  * Den Eigenschaftswert JLabel2 zurückgeben.
+ * JLabel2 Price for this Order
  * @return javax.swing.JLabel
  */
 /* WARNUNG: DIESE METHODE WIRD ERNEUT GENERIERT. */
@@ -805,6 +807,8 @@ private javax.swing.JLabel getJLabel4() {
 }
 /**
  * Den Eigenschaftswert JPanel1 zurückgeben.
+ * 
+ * JPanel1 Linke Seite
  * @return javax.swing.JPanel
  */
 /* WARNUNG: DIESE METHODE WIRD ERNEUT GENERIERT. */
@@ -1217,13 +1221,5 @@ public void keyReleased(java.awt.event.KeyEvent e) {}
 	 */
 public void keyTyped(java.awt.event.KeyEvent e) {
 	
-}
-/**
- * Startet die Anwendung.
- * @param args ein Array von Befehlszeilenargumenten
- */
-public static void main(java.lang.String[] args) {
-	// Hier Code einfügen, um die Anwendung zu starten.
-	new MyDemonstrator();
 }
 }
