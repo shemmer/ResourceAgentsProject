@@ -4,14 +4,14 @@ import java.awt.geom.AffineTransform;
 import java.awt.*;
 import java.awt.event.*;
 
-public class MyObjectCanvas extends javax.swing.JPanel {
-	private MySpace mySpace = null;
-	
+public class CapacityCanvas extends javax.swing.JPanel {
+
 	/*	Gibt an, ob gerade pausiert wird. */
 	private Color color[] = { Color.lightGray, Color.red, Color.cyan, Color.green, Color.orange, Color.blue, 
 					  Color.magenta, Color.pink, Color.orange, Color.white};
-
-public MyObjectCanvas() {
+	
+	private Offer offer;
+public CapacityCanvas() {
 	super();
 }
 /**
@@ -19,37 +19,36 @@ public MyObjectCanvas() {
  * Erstellungsdatum: (08.12.2002 15:40:09)
  * @return wendtris.MySpace
  */
-public MySpace getMySpace() {
-	return mySpace;
+public Offer getOffer() {
+	return offer;
 }
 public void paintComponent(java.awt.Graphics g) {
-	if( mySpace == null || g == null) return;
-	Graphics2D g2d = (Graphics2D)g;
+	if( offer == null || g == null) return;
+	
+	Graphics2D g2d = (Graphics2D) g;
 	AffineTransform origTx = g2d.getTransform();
 	AffineTransform at = new AffineTransform();
-
+	
 	int x = getSize().width;
 	int y = getSize().height;
 
-	byte[] activeObject = mySpace.getActiveObject();
-	
 	int xGap = 25;
-	int yGap = 5;
+	int yGap = 35;
 
 	int xPaint = x-xGap;
-	int yPaint = y-yGap-5;
+	int yPaint = y-yGap;
 	
-	int maxRows = mySpace.getMaxPriceTag();
-	int maxCols = mySpace.maxCols;
+	int maxRows = offer.maxRows;
+	int maxCols = offer.maxCols;
 	
+	g2d.setColor( Color.lightGray);
 	g2d.clearRect( 0, 0, x, y);
 	
 	double xDist = ((double)xPaint)/maxCols, yDist = ((double)yPaint)/maxRows;
-
-	g2d.setColor( color[mySpace.getActiveObjectID()] );
-	if( mySpace.getActiveObjectState())
-	for( int i=0; i<maxCols; i++) if( activeObject[i] != 0) {
-		g2d.fillRect( xGap+(int)(xDist*i), yGap+yPaint-(int)(yDist*mySpace.getActiveObjectPriceTag()+yDist*activeObject[i] ), (int)(xDist+1), (int)(yDist*activeObject[i]));
+	
+	for( int i=0; i<maxCols; i++) for( int j=0; j<maxRows; j++) if( offer.space[i][j]!=0) {
+		g2d.setColor( color[offer.space[i][j]] );
+		g2d.fillRect( xGap+(int)(xDist*i),  yGap+yPaint-(int)(yDist*(j+1)), (int)(xDist+1), (int)(yDist+1));
 	}
 	
 	g2d.setColor(Color.black);
@@ -59,7 +58,7 @@ public void paintComponent(java.awt.Graphics g) {
 
 	// Draw the string at the position (x, y)
 	g2d.setFont( new Font( "Arial", Font.ITALIC, 15));
-	g2d.drawString( "Price per used resource", 6, 14);
+	g2d.drawString( "Capacity of resource", 20, 14);
 
 	// Rotate back
 	g2d.setTransform(origTx);
@@ -69,18 +68,26 @@ public void paintComponent(java.awt.Graphics g) {
 		g2d.drawLine( xGap, yGap+(int)(yDist*i+1), xGap+xPaint, yGap+(int)(yDist*i+1));
 	}
 	g2d.drawLine( xGap, yGap+(int)(yDist*maxRows)-1, xGap+xPaint, yGap+(int)(yDist*maxRows)-1);	
-	g2d.drawLine( xGap, yGap+(int)(yDist*maxRows), xGap+xPaint, yGap+(int)(yDist*maxRows));	
-
+	g2d.drawLine( xGap, yGap+(int)(yDist*maxRows)-2, xGap+xPaint, yGap+(int)(yDist*maxRows)-2);	
+	
+	g2d.setFont( new Font( "Dialog", Font.BOLD, 12));
+	g2d.drawString( "t = ", 10, 16);
 	for( int i=0; i<maxCols; i++) {
-		g2d.drawLine( xGap+(int)(xDist*i), yGap, xGap+(int)(xDist*i), yGap + yPaint);
-		g2d.drawLine( xGap+(int)(xDist*i+1), yGap, xGap+(int)(xDist*i+1), yGap + yPaint);
+		g2d.drawLine( xGap+(int)(xDist*i), yGap, xGap+(int)(xDist*i), y);
+		g2d.drawLine( xGap+(int)(xDist*i+1), yGap, xGap+(int)(xDist*i+1), y);
+		g2d.drawString( String.valueOf(i+1), xGap+(int)(xDist*i)+(i<9?8:4), 16);
 	}
-	g2d.drawLine( xGap+(int)(xDist*maxCols)-1, yGap, xGap+(int)(xDist*maxCols)-1, yGap + yPaint);
-	g2d.drawLine( xGap+(int)(xDist*maxCols)-2, yGap, xGap+(int)(xDist*maxCols)-2, yGap + yPaint);
+	g2d.drawLine( xGap+(int)(xDist*maxCols)-1, yGap, xGap+(int)(xDist*maxCols)-1, y);
+	g2d.drawLine( xGap+(int)(xDist*maxCols)-2, yGap, xGap+(int)(xDist*maxCols)-2, y);
 		
 }
-public void setMySpace ( MySpace ms) {
-	mySpace = ms;
+/**
+ * Update offer object of Capacity Canvas and repaint
+ *
+ * @param newMySpace wendtris.MySpace
+ */
+public void setOffer(Offer newOffer) {
+	offer = newOffer;
 	repaint();
 }
 }

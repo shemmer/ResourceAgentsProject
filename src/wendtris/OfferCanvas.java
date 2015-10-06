@@ -4,14 +4,14 @@ import java.awt.geom.AffineTransform;
 import java.awt.*;
 import java.awt.event.*;
 
-public class MySpaceCanvas extends javax.swing.JPanel {
-
+public class OfferCanvas extends javax.swing.JPanel {
+	private Offer offer = null;
+	
 	/*	Gibt an, ob gerade pausiert wird. */
 	private Color color[] = { Color.lightGray, Color.red, Color.cyan, Color.green, Color.orange, Color.blue, 
 					  Color.magenta, Color.pink, Color.orange, Color.white};
-	
-	private MySpace mySpace;
-public MySpaceCanvas() {
+
+public OfferCanvas() {
 	super();
 }
 /**
@@ -19,36 +19,37 @@ public MySpaceCanvas() {
  * Erstellungsdatum: (08.12.2002 15:40:09)
  * @return wendtris.MySpace
  */
-public MySpace getMySpace() {
-	return mySpace;
+public Offer getOffer() {
+	return offer;
 }
 public void paintComponent(java.awt.Graphics g) {
-	if( mySpace == null || g == null) return;
-	
-	Graphics2D g2d = (Graphics2D) g;
+	if( offer == null || g == null) return;
+	Graphics2D g2d = (Graphics2D)g;
 	AffineTransform origTx = g2d.getTransform();
 	AffineTransform at = new AffineTransform();
-	
+
 	int x = getSize().width;
 	int y = getSize().height;
 
+	byte[] activeObject = offer.getActiveObject();
+	
 	int xGap = 25;
-	int yGap = 35;
+	int yGap = 5;
 
 	int xPaint = x-xGap;
-	int yPaint = y-yGap;
+	int yPaint = y-yGap-5;
 	
-	int maxRows = mySpace.maxRows;
-	int maxCols = mySpace.maxCols;
+	int maxRows = offer.getMaxPriceTag();
+	int maxCols = offer.maxCols;
 	
-	g2d.setColor( Color.lightGray);
 	g2d.clearRect( 0, 0, x, y);
 	
 	double xDist = ((double)xPaint)/maxCols, yDist = ((double)yPaint)/maxRows;
-	
-	for( int i=0; i<maxCols; i++) for( int j=0; j<maxRows; j++) if( mySpace.space[i][j]!=0) {
-		g2d.setColor( color[mySpace.space[i][j]] );
-		g2d.fillRect( xGap+(int)(xDist*i),  yGap+yPaint-(int)(yDist*(j+1)), (int)(xDist+1), (int)(yDist+1));
+
+	g2d.setColor( color[offer.getActiveObjectID()] );
+	if( offer.getActiveObjectState())
+	for( int i=0; i<maxCols; i++) if( activeObject[i] != 0) {
+		g2d.fillRect( xGap+(int)(xDist*i), yGap+yPaint-(int)(yDist*offer.getActiveObjectPriceTag()+yDist*activeObject[i] ), (int)(xDist+1), (int)(yDist*activeObject[i]));
 	}
 	
 	g2d.setColor(Color.black);
@@ -58,7 +59,7 @@ public void paintComponent(java.awt.Graphics g) {
 
 	// Draw the string at the position (x, y)
 	g2d.setFont( new Font( "Arial", Font.ITALIC, 15));
-	g2d.drawString( "Capacity of resource", 20, 14);
+	g2d.drawString( "Price per used resource", 6, 14);
 
 	// Rotate back
 	g2d.setTransform(origTx);
@@ -68,26 +69,18 @@ public void paintComponent(java.awt.Graphics g) {
 		g2d.drawLine( xGap, yGap+(int)(yDist*i+1), xGap+xPaint, yGap+(int)(yDist*i+1));
 	}
 	g2d.drawLine( xGap, yGap+(int)(yDist*maxRows)-1, xGap+xPaint, yGap+(int)(yDist*maxRows)-1);	
-	g2d.drawLine( xGap, yGap+(int)(yDist*maxRows)-2, xGap+xPaint, yGap+(int)(yDist*maxRows)-2);	
-	
-	g2d.setFont( new Font( "Dialog", Font.BOLD, 12));
-	g2d.drawString( "t = ", 10, 16);
+	g2d.drawLine( xGap, yGap+(int)(yDist*maxRows), xGap+xPaint, yGap+(int)(yDist*maxRows));	
+
 	for( int i=0; i<maxCols; i++) {
-		g2d.drawLine( xGap+(int)(xDist*i), yGap, xGap+(int)(xDist*i), y);
-		g2d.drawLine( xGap+(int)(xDist*i+1), yGap, xGap+(int)(xDist*i+1), y);
-		g2d.drawString( String.valueOf(i+1), xGap+(int)(xDist*i)+(i<9?8:4), 16);
+		g2d.drawLine( xGap+(int)(xDist*i), yGap, xGap+(int)(xDist*i), yGap + yPaint);
+		g2d.drawLine( xGap+(int)(xDist*i+1), yGap, xGap+(int)(xDist*i+1), yGap + yPaint);
 	}
-	g2d.drawLine( xGap+(int)(xDist*maxCols)-1, yGap, xGap+(int)(xDist*maxCols)-1, y);
-	g2d.drawLine( xGap+(int)(xDist*maxCols)-2, yGap, xGap+(int)(xDist*maxCols)-2, y);
+	g2d.drawLine( xGap+(int)(xDist*maxCols)-1, yGap, xGap+(int)(xDist*maxCols)-1, yGap + yPaint);
+	g2d.drawLine( xGap+(int)(xDist*maxCols)-2, yGap, xGap+(int)(xDist*maxCols)-2, yGap + yPaint);
 		
 }
-/**
- * Die Beschreibung der Methode hier eingeben.
- * Erstellungsdatum: (08.12.2002 15:40:09)
- * @param newMySpace wendtris.MySpace
- */
-public void setMySpace(MySpace newMySpace) {
-	mySpace = newMySpace;
+public void setOffer ( Offer ms) {
+	offer = ms;
 	repaint();
 }
 }

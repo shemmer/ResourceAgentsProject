@@ -3,8 +3,13 @@ package wendtris;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
+import java.util.HashMap;
+import java.util.Map;
 
-public class MySpace {
+import resourceAgent.Resource;
+
+
+public class Offer implements Serializable {
 	public static final int left = 1, right = 2, accept = 3, reject = 4;
 
 	public byte[][] space = new byte[maxCols][maxRows];
@@ -16,6 +21,13 @@ public class MySpace {
 	private int activeObjectPriceTag = 1;
 	java.util.Random random = new java.util.Random();
 
+	private Map<Resource, Byte> activeObjectMap = new HashMap<Resource,Byte>();
+	public Map<Resource, Byte> getActiveObjectMap() {
+		return activeObjectMap;
+	}
+	public void setActiveObjectMap(Map<Resource, Byte> activeObjectMap) {
+		this.activeObjectMap = activeObjectMap;
+	}
 	private int objectNumber = 0;	
 	public static final int maxRows = 6, maxCols = 12;
 
@@ -38,7 +50,7 @@ public class MySpace {
 
 	private int step = 0, maxStep = 20;
 	private boolean limitSteps = true;
-public MySpace() {
+public Offer() {
 	super();
 	df.setMaximumFractionDigits(2);
 	newGame();
@@ -71,7 +83,15 @@ private boolean activateObject() {
 	else {
 		while( 0 == (activeObjectID = (byte)random.nextInt(thisObject.length))) {};
 		activeObject = new byte[ maxCols];
-		for( int i=0; i<maxCols; i++) activeObject[i] = thisObject[ activeObjectID][i];
+		for( int i=0; i<maxCols; i++) 
+		{
+			//insert the contents of the two-dimensional arrays second dimension into active object at
+			//activeobjectid
+			activeObject[i] = thisObject[ activeObjectID][i];
+			if(thisObject[ activeObjectID][i]!=0){
+				this.activeObjectMap.put(Resource.allValuesAsList().get(i), thisObject[ activeObjectID][i]);
+			}
+		}
 		activeObjectPriceTag = minPrice + random.nextInt( priceSpan);
 		activeObjectIncome = 0;
 		for( int i=0; i<maxCols; i++) activeObjectIncome += activeObject[i];
