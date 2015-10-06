@@ -1,11 +1,11 @@
 import jade.wrapper.AgentController;
+
 import jade.core.Profile;
 import jade.core.ProfileImpl;
 import jade.tools.sniffer.Sniffer;
 import jade.wrapper.StaleProxyException;
 import jade.core.Runtime;
 
-import wendtris.MyDemonstrator;
 
 public class Start {
 	public static void main(String[] args) {
@@ -27,23 +27,49 @@ public class Start {
 		System.out.println("Launching agents...");
 
 		try {			
-			// Starts a 
+			// Starts a rma agent -> GUI agent of Jade 
 			AgentController rma;
 			rma = mainContainer.createNewAgent("rma",
 					"jade.tools.rma.rma", new Object[0]);
 			rma.start();
 			System.out.println("RMA agent launched...");
-			System.out.println("Setting up agents ...");
+			System.out.println("Setting up resource agents ...");
 			//args[0] =  # resource slots
-			AgentController res1 = mainContainer.createNewAgent("Res1", "mas.resourceAgent.ResourceAgent",  new String[] {});
-			AgentController res2 = mainContainer.createNewAgent("Res2", "mas.resourceAgent.ResourceAgent", new String[] {});
+			AgentController res1 = mainContainer.createNewAgent("Res1", "resourceAgent.ResourceAgent",  new String[] {"ONE"});
+//			AgentController res2 = mainContainer.createNewAgent("Res2", "resourceAgent.ResourceAgent", new String[] {"TWO"});
+//			AgentController res3 = mainContainer.createNewAgent("Res3", "resourceAgent.ResourceAgent",  new String[] {"THREE"});
+//			AgentController res4 = mainContainer.createNewAgent("Res4", "resourceAgent.ResourceAgent", new String[] {"FOUR"});
+			AgentController res5 = mainContainer.createNewAgent("Res5", "resourceAgent.ResourceAgent",  new String[] {"FIVE"});
+			AgentController res6 = mainContainer.createNewAgent("Res6", "resourceAgent.ResourceAgent", new String[] {"SIX"});
+			AgentController res7 = mainContainer.createNewAgent("Res7", "resourceAgent.ResourceAgent",  new String[] {"SEVEN"});
+			AgentController res8 = mainContainer.createNewAgent("Res8", "resourceAgent.ResourceAgent", new String[] {"EIGHT"});
+			AgentController res9 = mainContainer.createNewAgent("Res9", "resourceAgent.ResourceAgent",  new String[] {"NINE"});
+			AgentController res10 = mainContainer.createNewAgent("Res10", "resourceAgent.ResourceAgent", new String[] {"TEN"});
+//			AgentController res11 = mainContainer.createNewAgent("Res11", "resourceAgent.ResourceAgent",  new String[] {"ELEVEN"});
+//			AgentController res12 = mainContainer.createNewAgent("Res12", "resourceAgent.ResourceAgent", new String[] {"TWELVE"});
 
+			System.out.println("Setting up service aggregator agent ...");
+			AgentController serviceAggAgent= mainContainer.createNewAgent("ServiceAggregator", "resourceAgent.ServiceAggregatorAgent", new String[] {});
+
+
+			System.out.println("Starting all agents ...");
 			res1.start();
-			res2.start();
+//			res2.start();
+//			res3.start();
+//			res4.start();
+			res5.start();
+			res6.start();			
+			res7.start();
+			res8.start();			
+			res9.start();
+			res10.start();
+//			res11.start();
+//			res12.start();
+			serviceAggAgent.start();
+
 		} catch (StaleProxyException e) {
 			
 			e.printStackTrace();
 		}
-	new MyDemonstrator();
 	}
 }	
