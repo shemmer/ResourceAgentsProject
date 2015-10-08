@@ -23,15 +23,20 @@ public class ResourceAgent extends AbstractAgent{
 	protected Resource resType;
 	//ServiceAggregatorAgent ID
 	protected AID serviceAgg;
-	//Current offer
-	protected HashMap<Resource, Byte> offer;
 	//Current costs per res unit
 	protected double cost = 1.2;
+	//Current remaining capacity
+	protected int capacity=6;
+	public int getCapacity() {
+		return capacity;
+	}
+	public void setCapacity(int capacity) {
+		this.capacity = capacity;
+	}
 	/**
 	 * Overloading setup to also execute the Registration of the agent with the DF
 	 */
 	protected void setup(){
-
 		Object[] args = getArguments();
 		for(int i =0; i<args.length; i++){
 			resType = Resource.valueOf(args[i].toString());
@@ -44,7 +49,8 @@ public class ResourceAgent extends AbstractAgent{
 	 * Receiver Behavior
 	 */
 	private class ResourceReceiverBehaviour extends CyclicBehaviour {
-		private boolean finished = false;
+		//Current offer
+		protected HashMap<Resource, Byte> offer;
 		@Override
 		public void action() {
 			ACLMessage msg = this.myAgent.receive();
@@ -53,29 +59,57 @@ public class ResourceAgent extends AbstractAgent{
 			}else{
 				//New Offer
 				if(ACLMessage.INFORM == msg.getPerformative()){
+					System.out.println(this.myAgent.getLocalName() + " : INFORM");
 					try {
 						offer = (HashMap<Resource, Byte>) msg.getContentObject();
 					} catch (UnreadableException e) {
 						System.err.println("Error deserializing offer object");
 						e.printStackTrace();
 					}
-					send(createMessage(ACLMessage.CONFIRM, "ACK", msg.getSender()));
-					System.out.println("Agent " + this.myAgent.getLocalName() +
-							" received and acknowledged message from "+ msg.getSender().getLocalName() + " regarding resource " 
-							+resType+ " with a quantity of " + offer.get(resType));
-					this.myAgent.addBehaviour(new CalculatingBehaviour(this.myAgent, msg.getSender()));
+					//ResourceType handled by ResourceAgent and capacity sufficient
+					if(offer.containsKey(resType) && capacity - offer.get(resType) >=0){
+						System.out.println(this.myAgent.getLocalName()+  " CONFIRM");
+						ACLMessage reply = new ACLMessage(ACLMessage.CONFIRM);
+						reply.addReceiver(msg.getSender());
+						try {
+							reply.setContentObject(resType);
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+						reply.setLanguage("Java");
+						reply.setOntology("");
+						reply.setSender(this.myAgent.getAID());
+						this.myAgent.send(reply);
+						this.myAgent.addBehaviour(new CalculatingBehaviour(this.myAgent, msg.getSender(),offer));
+					}else{
+						System.out.println(this.myAgent.getLocalName() + " REFUSE");
+						ACLMessage reply = new ACLMessage(ACLMessage.REFUSE);
+						reply.setSender(this.myAgent.getAID());
+						reply.setLanguage("Java");
+						try {
+							reply.setContentObject(resType);
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+						reply.setOntology("");
+						reply.addReceiver(msg.getSender());
+						this.myAgent.send(reply);
+						offer = null;
+					}
 				}
 				if(ACLMessage.ACCEPT_PROPOSAL == msg.getPerformative()){
-					System.out.println("Agent " + this.myAgent.getLocalName() +
-							" received "+ msg.getSender().getLocalName() + " regarding resource " +resType+
-							" accepting the proposed costs");
+					System.out.println("Agent " + this.myAgent.getLocalName() +": COST_ACCEPT");
 					this.myAgent.addBehaviour(new ReservingBehaviour());
 				}
 				if(ACLMessage.REJECT_PROPOSAL==msg.getPerformative()){
 					System.out.println("Agent " + this.myAgent.getLocalName() +
-							" received "+ msg.getSender().getLocalName() + " regarding resource " +resType+
-							" rejecting the proposed costs");
+							" COST_REJECT");
 					//TODO Nothing?
+				}
+				if(ACLMessage.CANCEL== msg.getPerformative()){
+					System.out.println("Agent " + this.myAgent.getLocalName() +
+							" : CANCEL " );
+					this.myAgent.addBehaviour(new AbortBehaviour());
 				}
 			}
 		}
@@ -85,37 +119,42 @@ public class ResourceAgent extends AbstractAgent{
 	 * Calculating Behavior
 	 */
 	private class CalculatingBehaviour extends SimpleBehaviour {
+		//Current offer
+		protected HashMap<Resource, Byte> offer;
 		private boolean finished = false;
 		private AID serviceAgg;
-		public CalculatingBehaviour(Agent me, AID serviceAgg)
+		public CalculatingBehaviour(Agent me, AID serviceAgg, 
+				HashMap<Resource, Byte> or)
 		{
+			this.offer= or;
 			this.myAgent=me;
 			this.serviceAgg= serviceAgg;
 		}
 		@Override
 		public void action() {
-			System.out.println(this.myAgent.getLocalName() +  ": Starting calculation of costs for resource " + resType );
-			byte quantity = offer.get(resType);
-			cost = quantity * cost;
-			AbstractMap.SimpleEntry<Resource, Double> pair = new AbstractMap.SimpleEntry<>(resType,cost);
-			ACLMessage msg = new ACLMessage(ACLMessage.PROPOSE);
-			msg.setSender(this.myAgent.getAID());
-			msg.setLanguage("Java");
-			try {
-				msg.setContentObject(pair);
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			msg.setOntology("");
-			msg.addReceiver(serviceAgg);
-			this.myAgent.send(msg);
-			this.finished=true;
+			System.out.println(this.myAgent.getLocalName() +  ": Starting calculation of costs for"
+					+ " resource " + resType );
+				byte quantity = offer.get(resType);
+				cost = quantity * cost;
+				AbstractMap.SimpleEntry<Resource, Double> pair = new AbstractMap.SimpleEntry<>(resType,cost);
+				ACLMessage msg = new ACLMessage(ACLMessage.PROPOSE);
+				msg.setSender(this.myAgent.getAID());
+				msg.setLanguage("Java");
+				try {
+					msg.setContentObject(pair);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				msg.setOntology("");
+				msg.addReceiver(serviceAgg);
+				this.myAgent.send(msg);
+				this.finished=true;
+				capacity = capacity - offer.get(resType);
 		}
 		@Override
 		public boolean done() {
 			return finished;
 		}
-
 	}
 	/**
 	 * Reserving Behavior
@@ -124,13 +163,27 @@ public class ResourceAgent extends AbstractAgent{
 		private boolean finished = false;
 		@Override
 		public void action() {
-			System.out.println("Reserving resource " + resType);
+//			System.out.println("Reserving resource " + resType);
+			this.finished = true;
 		}
 		@Override
 		public boolean done() {
 			return finished;
 		}
 	}
-	
-	
+	/**
+	 * Abort Behavior
+	 */
+	private class AbortBehaviour extends SimpleBehaviour {
+		private boolean finished = false;
+		@Override
+		public void action() {
+			System.err.println("Aborting");
+			this.finished = true;
+		}
+		@Override
+		public boolean done() {
+			return finished;
+		}
+	}
 }

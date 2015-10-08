@@ -21,7 +21,7 @@ public class Offer implements Serializable {
 	private int activeObjectPriceTag = 1;
 	java.util.Random random = new java.util.Random();
 
-	private Map<Resource, Byte> activeObjectMap = new HashMap<Resource,Byte>();
+	private Map<Resource, Byte> activeObjectMap;
 	public Map<Resource, Byte> getActiveObjectMap() {
 		return activeObjectMap;
 	}
@@ -81,6 +81,7 @@ private boolean activateObject() {
 	if( limitSteps && step>=maxStep) return false;
 	if( activeObjectState) System.out.println("Error at activeObject()");
 	else {
+		this.activeObjectMap = new HashMap<Resource,Byte>();
 		while( 0 == (activeObjectID = (byte)random.nextInt(thisObject.length))) {};
 		activeObject = new byte[ maxCols];
 		for( int i=0; i<maxCols; i++) 

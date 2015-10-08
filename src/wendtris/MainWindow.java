@@ -3,6 +3,7 @@ package wendtris;
 import javax.swing.JTextField;
 
 import jade.core.Agent;
+import resourceAgent.ServiceAggregatorAgent;
 
 /**
  * Die Beschreibung des Typs hier eingeben.
@@ -10,13 +11,14 @@ import jade.core.Agent;
  * @author: 
  */
 public class MainWindow extends javax.swing.JFrame implements java.awt.event.KeyListener {
+	
 	private javax.swing.JPanel mainPanel = null;
 	private OfferCanvas offerCanvas = null;
 	private Offer offer = null;
 	private CapacityCanvas capacityCanvas = null;
 	private javax.swing.JPanel ivjJPanel1 = null;
-	private javax.swing.JButton moveLeftButton = null;
-	private javax.swing.JButton moveRightButton = null;
+//	private javax.swing.JButton moveLeftButton = null;
+//	private javax.swing.JButton moveRightButton = null;
 	private javax.swing.JButton rejectButton = null;
 	private javax.swing.JButton acceptButton = null;
 	private javax.swing.JButton clearButton = null;
@@ -37,41 +39,37 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	private javax.swing.JLabel aggCostLabel = null;
 	private javax.swing.JTextField aggCostField = null;
 
-	private Agent serviceAggregator;
+	private ServiceAggregatorAgent serviceAggregator;
 
 	class IvjEventHandler implements java.awt.event.ActionListener, java.awt.event.ItemListener, java.awt.event.WindowListener {
 		public void actionPerformed(java.awt.event.ActionEvent e) {
-			if (e.getSource() == MainWindow.this.getMoveLeftButton()) 
-				moveOfferLeft(e);
-			if (e.getSource() == MainWindow.this.getMoveRightButton()) 
-				moveOfferRight(e);
-			if (e.getSource() == MainWindow.this.getAcceptButton()) 
+//			if (e.getSource() == MainWindow.this.getMoveLeftButton()) 
+//				moveOfferLeft(e);
+//			if (e.getSource() == MainWindow.this.getMoveRightButton()) 
+//				moveOfferRight(e);
+			if (e.getSource() == MainWindow.this.getAcceptButton()){ 
 				updateLogTextAreaAccept(e);
-			if (e.getSource() == MainWindow.this.getAcceptButton()) 
 				acceptActiveObject(e);
-			if (e.getSource() == MainWindow.this.getRejectButton()) 
+			}
+			if (e.getSource() == MainWindow.this.getRejectButton()) {
 				updateLogTextAreaReject(e);
-			if (e.getSource() == MainWindow.this.getRejectButton()) 
 				rejectActiveObject(e);
-			if (e.getSource() == MainWindow.this.getClearResButton()) 
-				initNewGame(e);
-			if (e.getSource() == MainWindow.this.getOffer()) 
-				updatePricePerResTextField(e);
-			if (e.getSource() == MainWindow.this.getOffer()) 
+			}
+			if (e.getSource() == MainWindow.this.getOffer()) {
+				updatePricePerResTextField(e); 
 				updatePriceOrderTextField(e);
-			if (e.getSource() == MainWindow.this.getOffer()) 
 				updateIncomeTextField(e);
-			if (e.getSource() == MainWindow.this.getOffer()) 
 				repaintOfferCanvas(e);
-			if (e.getSource() == MainWindow.this.getOffer()) 
 				repaintCapacityCanvas(e);
-			if (e.getSource() == MainWindow.this.getClearResButton()) 
+			}
+			if (e.getSource() == MainWindow.this.getClearResButton()){ 
+				initNewGame(e);
 				initLogTextArea(e);
-			if (e.getSource() == MainWindow.this.getClearResButton()) 
 				enableAcceptButton(e);
+			}
 			if (e.getSource() == MainWindow.this.getOffer()){
 				//TODO Changes in my space -> activate Service Aggregator
-				serviceAggregator.addBehaviour(new ServiceAggStartBehaviour(serviceAggregator, offer));
+				serviceAggregator.addBehaviour(serviceAggregator.new ServiceAggStartBehaviour(serviceAggregator, offer));
 				updateStepTextField(e);
 			}
 		};
@@ -104,7 +102,7 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	 */
 	public MainWindow(Agent a) {
 		super();
-		this.serviceAggregator= a;
+		this.serviceAggregator= (ServiceAggregatorAgent) a;
 		initialize();
 	}
 
@@ -291,19 +289,12 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	 * @return boolean
 	 * @param arg1 java.awt.event.ActionEvent
 	 */
-	/* WARNUNG: DIESE METHODE WIRD ERNEUT GENERIERT. */
 	private boolean acceptActiveObject(java.awt.event.ActionEvent arg1) {
 		boolean connEtoM6Result = false;
 		try {
-			// user code begin {1}
-			// user code end
 			connEtoM6Result = getOffer().acceptActiveObject();
 			toggleAcceptButton(connEtoM6Result);
-			// user code begin {2}
-			// user code end
 		} catch (java.lang.Throwable ivjExc) {
-			// user code begin {3}
-			// user code end
 			handleException(ivjExc);
 		}
 		return connEtoM6Result;
@@ -313,7 +304,6 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	 * @return boolean
 	 * @param arg1 java.awt.event.ActionEvent
 	 */
-	/* WARNUNG: DIESE METHODE WIRD ERNEUT GENERIERT. */
 	private boolean rejectActiveObject(java.awt.event.ActionEvent arg1) {
 		boolean connEtoM7Result = false;
 		try {
@@ -378,30 +368,30 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 			handleException(ivjExc);
 		}
 	}
-	private javax.swing.JButton getMoveLeftButton() {
-		if (moveLeftButton == null) {
-			try {
-				moveLeftButton = new javax.swing.JButton();
-				moveLeftButton.setName("JButton1");
-				moveLeftButton.setText("Move Left");
-			} catch (java.lang.Throwable ivjExc) {
-				handleException(ivjExc);
-			}
-		}
-		return moveLeftButton;
-	}
-	private javax.swing.JButton getMoveRightButton() {
-		if (moveRightButton == null) {
-			try {
-				moveRightButton = new javax.swing.JButton();
-				moveRightButton.setName("JButton2");
-				moveRightButton.setText("Move Right");
-			} catch (java.lang.Throwable ivjExc) {
-				handleException(ivjExc);
-			}
-		}
-		return moveRightButton;
-	}
+//	private javax.swing.JButton getMoveLeftButton() {
+//		if (moveLeftButton == null) {
+//			try {
+//				moveLeftButton = new javax.swing.JButton();
+//				moveLeftButton.setName("JButton1");
+//				moveLeftButton.setText("Move Left");
+//			} catch (java.lang.Throwable ivjExc) {
+//				handleException(ivjExc);
+//			}
+//		}
+//		return moveLeftButton;
+//	}
+//	private javax.swing.JButton getMoveRightButton() {
+//		if (moveRightButton == null) {
+//			try {
+//				moveRightButton = new javax.swing.JButton();
+//				moveRightButton.setName("JButton2");
+//				moveRightButton.setText("Move Right");
+//			} catch (java.lang.Throwable ivjExc) {
+//				handleException(ivjExc);
+//			}
+//		}
+//		return moveRightButton;
+//	}
 	private javax.swing.JButton getRejectButton() {
 		if (rejectButton == null) {
 			try {
@@ -495,11 +485,7 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 				constraintsJTabbedPane1.weighty = 1.0;
 				constraintsJTabbedPane1.insets = new java.awt.Insets(4, 4, 4, 4);
 				getJFrameContentPane().add(getJTabbedPane1(), constraintsJTabbedPane1);
-				// user code begin {1}
-				// user code end
 			} catch (java.lang.Throwable ivjExc) {
-				// user code begin {2}
-				// user code end
 				handleException(ivjExc);
 			}
 		}
@@ -511,11 +497,7 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 				pricePerResLabel = new javax.swing.JLabel();
 				pricePerResLabel.setName("JLabel1");
 				pricePerResLabel.setText("Price per ResUnit");
-				// user code begin {1}
-				// user code end
 			} catch (java.lang.Throwable ivjExc) {
-				// user code begin {2}
-				// user code end
 				handleException(ivjExc);
 			}
 		}
@@ -595,19 +577,19 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 				ivjJPanel1.setName("JPanel1");
 				ivjJPanel1.setLayout(new java.awt.GridBagLayout());
 
-				java.awt.GridBagConstraints constraintsJButton1 = new java.awt.GridBagConstraints();
-				constraintsJButton1.gridx = 0; constraintsJButton1.gridy = 5;
-				constraintsJButton1.fill = java.awt.GridBagConstraints.HORIZONTAL;
-				constraintsJButton1.weightx = 1.0;
-				constraintsJButton1.insets = new java.awt.Insets(4, 8, 4, 8);
-				getJPanel1().add(getMoveLeftButton(), constraintsJButton1);
-
-				java.awt.GridBagConstraints constraintsJButton2 = new java.awt.GridBagConstraints();
-				constraintsJButton2.gridx = 1; constraintsJButton2.gridy = 5;
-				constraintsJButton2.fill = java.awt.GridBagConstraints.HORIZONTAL;
-				constraintsJButton2.weightx = 1.0;
-				constraintsJButton2.insets = new java.awt.Insets(4, 8, 4, 8);
-				getJPanel1().add(getMoveRightButton(), constraintsJButton2);
+//				java.awt.GridBagConstraints constraintsJButton1 = new java.awt.GridBagConstraints();
+//				constraintsJButton1.gridx = 0; constraintsJButton1.gridy = 5;
+//				constraintsJButton1.fill = java.awt.GridBagConstraints.HORIZONTAL;
+//				constraintsJButton1.weightx = 1.0;
+//				constraintsJButton1.insets = new java.awt.Insets(4, 8, 4, 8);
+//				getJPanel1().add(getMoveLeftButton(), constraintsJButton1);
+//
+//				java.awt.GridBagConstraints constraintsJButton2 = new java.awt.GridBagConstraints();
+//				constraintsJButton2.gridx = 1; constraintsJButton2.gridy = 5;
+//				constraintsJButton2.fill = java.awt.GridBagConstraints.HORIZONTAL;
+//				constraintsJButton2.weightx = 1.0;
+//				constraintsJButton2.insets = new java.awt.Insets(4, 8, 4, 8);
+//				getJPanel1().add(getMoveRightButton(), constraintsJButton2);
 
 				java.awt.GridBagConstraints constraintsJButton3 = new java.awt.GridBagConstraints();
 				constraintsJButton3.gridx = 0; constraintsJButton3.gridy = 6;
@@ -720,11 +702,7 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 				ivjJScrollPane1 = new javax.swing.JScrollPane();
 				ivjJScrollPane1.setName("JScrollPane1");
 				getJScrollPane1().setViewportView(initLogTextArea());
-				// user code begin {1}
-				// user code end
 			} catch (java.lang.Throwable ivjExc) {
-				// user code begin {2}
-				// user code end
 				handleException(ivjExc);
 			}
 		}
@@ -850,11 +828,10 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	 * Initialisiert Verbindungen
 	 * @exception java.lang.Exception Die Beschreibung der Ausnahmebedingung.
 	 */
-	/* WARNUNG: DIESE METHODE WIRD ERNEUT GENERIERT. */
 	private void initListeners() throws java.lang.Exception {
 		this.addKeyListener(this);
-		getMoveLeftButton().addActionListener(ivjEventHandler);
-		getMoveRightButton().addActionListener(ivjEventHandler);
+//		getMoveLeftButton().addActionListener(ivjEventHandler);
+//		getMoveRightButton().addActionListener(ivjEventHandler);
 		getAcceptButton().addActionListener(ivjEventHandler);
 		getRejectButton().addActionListener(ivjEventHandler);
 		getClearResButton().addActionListener(ivjEventHandler);
