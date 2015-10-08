@@ -15,37 +15,44 @@ import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.lang.acl.ACLMessage;
 import resourceAgent.Resource;
+import resourceAgent.ServiceAggregatorAgent;
 
 public class ServiceAggStartBehaviour extends SimpleBehaviour {
 	private boolean finished = false;
 	private Offer offer;
 	public ServiceAggStartBehaviour(Agent a, Offer o){
 		super(a);
+		ServiceAggregatorAgent serviceAgg = (ServiceAggregatorAgent) a;
+		serviceAgg.setOffer(o);
 		this.offer = o;
 	}
 	@Override
 	public void action() {;
 		System.out.println("Received an offer");
 		byte[] activeObj = offer.getActiveObject();
-		Map<Resource, Byte> activeObjectMap = offer.getActiveObjectMap();
+		HashMap<Resource, Byte> activeObjectMap = (HashMap<Resource, Byte>) offer.getActiveObjectMap();
+		HashMap<Resource, Double> map = new HashMap<Resource, Double>();
 		Iterator<Resource> it = activeObjectMap.keySet().iterator();
 		while(it.hasNext())
 		{
+			
+			Resource currRes = it.next();
+			//Create a entry with 0 in the currBestCost map
+			map.put(currRes, Double.MAX_VALUE);
+			//Search the DF for agents responsible for the current resource
 			DFAgentDescription dfd = new DFAgentDescription();
-			Resource res = it.next();
-			//In case we just want to submit the amount of a resource that is needed
-			byte val = activeObjectMap.get(res);
 			ServiceDescription sd = new ServiceDescription();
-			sd.setType(res.toString());
-			sd.setName("Agent_"+res.toString());
+			sd.setType(currRes.toString());
+			sd.setName("Agent_"+currRes.toString());
 			dfd.addServices(sd);
 			try {
 				DFAgentDescription[] resAgents = DFService.search(this.myAgent, dfd);
-				System.out.println("Found " + resAgents.length + " agent(s) for resource " + res );
+				System.out.println("Found " + resAgents.length + " agent(s) for resource " + currRes );
+				//Contact agent to inform him of a new offer and submit it to him
 				ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
 				msg.setSender(this.myAgent.getAID());
 				msg.setLanguage("Java");
-				msg.setContentObject(offer.getActiveObject());
+				msg.setContentObject(activeObjectMap);
 				msg.setOntology("");
 				for(DFAgentDescription a : resAgents)
 				{
@@ -62,6 +69,7 @@ public class ServiceAggStartBehaviour extends SimpleBehaviour {
 				e.printStackTrace();
 			}
 		}
+		((ServiceAggregatorAgent) this.myAgent).setCurrBestCost(map);
 		finished = true;
 		System.out.println("Resource Agents contacted");
 	}

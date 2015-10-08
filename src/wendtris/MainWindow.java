@@ -99,7 +99,7 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	}
 
 	/**
-	 * MyDemonstrator - Konstruktorkommentar.
+	 * Main Window Constructor; Also initializes the window and sets serviceAggregator agent variable -> (1:1 MainWindow : ServiceAggregator)
 	 * @param agent Service Aggregator agent invoking the creation of MainWindow
 	 */
 	public MainWindow(Agent a) {
@@ -342,6 +342,17 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	private void updatePricePerResTextField(java.awt.event.ActionEvent arg1) {
 		try {
 			getPricePerResTextField().setText(getOffer().getFormatedActiveObjectPriceTag());
+		} catch (java.lang.Throwable ivjExc) {
+			handleException(ivjExc);
+		}
+	}
+	/**
+	 * Set value of Aggregated Cost
+	 * @param arg1
+	 */
+	public void updateAggCost(double aggCost) {
+		try {
+			this.getAggCostField().setText(Double.toString(aggCost));
 		} catch (java.lang.Throwable ivjExc) {
 			handleException(ivjExc);
 		}

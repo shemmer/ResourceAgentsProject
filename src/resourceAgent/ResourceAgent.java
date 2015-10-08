@@ -1,13 +1,21 @@
 package resourceAgent;
 
 import jade.core.behaviours.SimpleBehaviour;
+
+import java.io.IOException;
+import java.util.AbstractMap;
+import java.util.HashMap;
+import java.util.Map;
+
 import jade.core.AID;
+import jade.core.Agent;
 import jade.core.behaviours.*;
 import jade.domain.DFService;
 import jade.domain.FIPAException;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.lang.acl.ACLMessage;
+import jade.lang.acl.UnreadableException;
 import wendtris.Offer;
 
 public class ResourceAgent extends AbstractAgent{
@@ -16,7 +24,9 @@ public class ResourceAgent extends AbstractAgent{
 	//ServiceAggregatorAgent ID
 	protected AID serviceAgg;
 	//Current offer
-	protected Offer offer;
+	protected HashMap<Resource, Byte> offer;
+	//Current costs per res unit
+	protected double cost = 1.2;
 	/**
 	 * Overloading setup to also execute the Registration of the agent with the DF
 	 */
@@ -28,12 +38,12 @@ public class ResourceAgent extends AbstractAgent{
 		}
 		this.service = resType.toString();
 		this.registerAtDF();
-		addBehaviour(new WaitBehaviour());
+		addBehaviour(new ResourceReceiverBehaviour());
 	}
 	/**
-	 * Wait Behavior
+	 * Receiver Behavior
 	 */
-	private class WaitBehaviour extends SimpleBehaviour {
+	private class ResourceReceiverBehaviour extends CyclicBehaviour {
 		private boolean finished = false;
 		@Override
 		public void action() {
@@ -41,16 +51,33 @@ public class ResourceAgent extends AbstractAgent{
 			if(msg==null){
 				block(1000);
 			}else{
-				send(createMessage(ACLMessage.CONFIRM, "ACK", msg.getSender()));
-				removeBehaviour(new WaitBehaviour());
-				System.out.println("Agent " + getAID().getName()+
-						" received and acknowledged message from "+ msg.getSender());
-				finished = true;
+				//New Offer
+				if(ACLMessage.INFORM == msg.getPerformative()){
+					try {
+						offer = (HashMap<Resource, Byte>) msg.getContentObject();
+					} catch (UnreadableException e) {
+						System.err.println("Error deserializing offer object");
+						e.printStackTrace();
+					}
+					send(createMessage(ACLMessage.CONFIRM, "ACK", msg.getSender()));
+					System.out.println("Agent " + this.myAgent.getLocalName() +
+							" received and acknowledged message from "+ msg.getSender().getLocalName() + " regarding resource " 
+							+resType+ " with a quantity of " + offer.get(resType));
+					this.myAgent.addBehaviour(new CalculatingBehaviour(this.myAgent, msg.getSender()));
+				}
+				if(ACLMessage.ACCEPT_PROPOSAL == msg.getPerformative()){
+					System.out.println("Agent " + this.myAgent.getLocalName() +
+							" received "+ msg.getSender().getLocalName() + " regarding resource " +resType+
+							" accepting the proposed costs");
+					this.myAgent.addBehaviour(new ReservingBehaviour());
+				}
+				if(ACLMessage.REJECT_PROPOSAL==msg.getPerformative()){
+					System.out.println("Agent " + this.myAgent.getLocalName() +
+							" received "+ msg.getSender().getLocalName() + " regarding resource " +resType+
+							" rejecting the proposed costs");
+					//TODO Nothing?
+				}
 			}
-		}
-		@Override
-		public boolean done() {
-			return finished;
 		}
 
 	}
@@ -59,10 +86,30 @@ public class ResourceAgent extends AbstractAgent{
 	 */
 	private class CalculatingBehaviour extends SimpleBehaviour {
 		private boolean finished = false;
+		private AID serviceAgg;
+		public CalculatingBehaviour(Agent me, AID serviceAgg)
+		{
+			this.myAgent=me;
+			this.serviceAgg= serviceAgg;
+		}
 		@Override
 		public void action() {
-			System.out.println("Sample Action");
-			block(1000);
+			System.out.println(this.myAgent.getLocalName() +  ": Starting calculation of costs for resource " + resType );
+			byte quantity = offer.get(resType);
+			cost = quantity * cost;
+			AbstractMap.SimpleEntry<Resource, Double> pair = new AbstractMap.SimpleEntry<>(resType,cost);
+			ACLMessage msg = new ACLMessage(ACLMessage.PROPOSE);
+			msg.setSender(this.myAgent.getAID());
+			msg.setLanguage("Java");
+			try {
+				msg.setContentObject(pair);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			msg.setOntology("");
+			msg.addReceiver(serviceAgg);
+			this.myAgent.send(msg);
+			this.finished=true;
 		}
 		@Override
 		public boolean done() {
@@ -77,13 +124,12 @@ public class ResourceAgent extends AbstractAgent{
 		private boolean finished = false;
 		@Override
 		public void action() {
-			System.out.println("Sample Action");
+			System.out.println("Reserving resource " + resType);
 		}
 		@Override
 		public boolean done() {
 			return finished;
 		}
-
 	}
 	
 	
