@@ -1,5 +1,7 @@
 package wendtris;
 
+import java.io.Serializable;
+
 import javax.swing.JTextField;
 
 import jade.core.Agent;
@@ -41,7 +43,7 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 
 	private ServiceAggregatorAgent serviceAggregator;
 
-	class IvjEventHandler implements java.awt.event.ActionListener, java.awt.event.ItemListener, java.awt.event.WindowListener {
+	class IvjEventHandler implements java.awt.event.ActionListener, java.awt.event.ItemListener, java.awt.event.WindowListener, Serializable {
 		public void actionPerformed(java.awt.event.ActionEvent e) {
 //			if (e.getSource() == MainWindow.this.getMoveLeftButton()) 
 //				moveOfferLeft(e);
@@ -63,9 +65,11 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 				repaintCapacityCanvas(e);
 			}
 			if (e.getSource() == MainWindow.this.getClearResButton()){ 
+				System.err.println("GetClearRes");
 				initNewGame(e);
 				initLogTextArea(e);
 				enableAcceptButton(e);
+				serviceAggregator.addBehaviour(serviceAggregator.new RestartBehaviour());
 			}
 			if (e.getSource() == MainWindow.this.getOffer()){
 				//TODO Changes in my space -> activate Service Aggregator
@@ -139,6 +143,17 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	private void updateIncomeTextField(java.awt.event.ActionEvent arg1) {
 		try {
 			getIncomeTextField().setText(String.valueOf(getOffer().getProfit()));
+		} catch (java.lang.Throwable ivjExc) {
+			handleException(ivjExc);
+		}
+	}
+	/**
+	 * connEtoM12:  (JButton4.action.actionPerformed(java.awt.event.ActionEvent) --> JTextArea1.append(Ljava.lang.String;)V)
+	 * @param arg1 java.awt.event.ActionEvent
+	 */
+	public void updateLogTextArea(String text) {
+		try {
+			initLogTextArea().append( text+ "\n");
 		} catch (java.lang.Throwable ivjExc) {
 			handleException(ivjExc);
 		}
@@ -343,6 +358,17 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	public void updateAggCost(double aggCost) {
 		try {
 			this.getAggCostField().setText(Double.toString(aggCost));
+		} catch (java.lang.Throwable ivjExc) {
+			handleException(ivjExc);
+		}
+	}
+	/**
+	 * Set value of Aggregated Cost
+	 * @param arg1
+	 */
+	public void updateAggCost(String text) {
+		try {
+			this.getAggCostField().setText(text);
 		} catch (java.lang.Throwable ivjExc) {
 			handleException(ivjExc);
 		}
@@ -841,6 +867,7 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 		registerOfferInCapacityCanvas();
 		setOfferInOfferCanvas();
 	}
+	
 	private void initialize() {
 		try {
 			setName("MyDemonstrator");

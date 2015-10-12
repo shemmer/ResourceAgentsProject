@@ -13,9 +13,11 @@ public abstract class AbstractAgent extends Agent{
 	//Agent Identifier
 	protected AID id;
 	//Type of agent
-	protected String service;
+	protected String[] service;
 	// Directory-Facilitator Description of the agent
 	protected DFAgentDescription dfAgentDescr;
+	//Service Name
+	protected String serviceName;
 	/**
 	 * Setup Method
 	 */
@@ -43,18 +45,22 @@ public abstract class AbstractAgent extends Agent{
 	 * @param service - the name under which the agent can be searched at the df
 	 */
 	protected void registerAtDF(){
+		String serv = "";
 		dfAgentDescr = new DFAgentDescription();
 		dfAgentDescr.setName(id);
-		ServiceDescription sd = new ServiceDescription();
-		sd.setType(service);
-		sd.setName("Agent_" + service);
-		dfAgentDescr.addServices(sd);
+		for(int i = 0; i<service.length; i++){
+			ServiceDescription sd = new ServiceDescription();
+			sd.setName(serviceName);
+			sd.setType(service[i]);
+			dfAgentDescr.addServices(sd);	
+			serv = serv + service[i];
+		}
 		try {
 			DFService.register(this, dfAgentDescr);
 		} catch (FIPAException e) {
 			e.printStackTrace();
 		}
-		System.out.println(getLocalName() + " registered at DF - Type: "+ service + "; Service: "+ "Agent_" +service);
+		System.out.println(getLocalName() + " registered at DF - Type: "+ serv + "; Service: "+ serviceName);
 	}
 	/**
 	 * Send a message to a single agent

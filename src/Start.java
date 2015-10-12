@@ -47,7 +47,8 @@ public class Start {
 			AgentController res10 = mainContainer.createNewAgent("Res10", "resourceAgent.ResourceAgent", new String[] {"TEN"});
 //			AgentController res11 = mainContainer.createNewAgent("Res11", "resourceAgent.ResourceAgent",  new String[] {"ELEVEN"});
 //			AgentController res12 = mainContainer.createNewAgent("Res12", "resourceAgent.ResourceAgent", new String[] {"TWELVE"});
-
+			
+			AgentController multiAgent = mainContainer.createNewAgent("MultiAgent", "resourceAgent.ResourceAgent", new String[] {"TEN", "ONE"});
 			System.out.println("Setting up service aggregator agent ...");
 			AgentController serviceAggAgent= mainContainer.createNewAgent("ServiceAggregator", "resourceAgent.ServiceAggregatorAgent", new String[] {});
 
@@ -63,6 +64,7 @@ public class Start {
 			res8.start();			
 			res9.start();
 			res10.start();
+			multiAgent.start();
 //			res11.start();
 //			res12.start();
 			serviceAggAgent.start();

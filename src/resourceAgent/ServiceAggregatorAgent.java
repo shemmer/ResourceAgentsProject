@@ -6,6 +6,7 @@ import java.util.AbstractMap.SimpleEntry;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -13,6 +14,7 @@ import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.core.behaviours.SimpleBehaviour;
+import jade.domain.AMSService;
 import jade.domain.DFService;
 import jade.domain.FIPAException;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
@@ -25,19 +27,16 @@ import wendtris.Offer;
 public class ServiceAggregatorAgent extends AbstractAgent{
 	//GUI
 	private MainWindow gui;
-	//Current Offer
-	private Offer offer;
-	//Current best costs
-	private HashMap<Resource, Double> bestCost;
-	//Current available agents for one resource
-	private HashMap<Resource, Set<AID>> agentsResMap;
-	//Current aggregated costs
-	private double aggCost;
+	//Current offer
+	protected Offer offer;
 	/**
-	 * Overloading setup
+	 * Overloading setup -> Adding ServiceAggregator to the DF; Creating GUI; Adding Message ReceiverBehaviour
+	 * 
 	 */
 	protected void setup(){
-		this.service = "ServiceAggregation";
+		this.service = new String[1];
+		this.service[0] = "ServiceAggregation";
+		this.serviceName="Aggregator";
 		this.registerAtDF();
 		gui = new MainWindow(this);
 		addBehaviour(new ServiceReceiverBehaviour(this));
@@ -73,49 +72,56 @@ public class ServiceAggregatorAgent extends AbstractAgent{
 				//Actions performed when a cost proposal arrives from the resource agent
 				if(ACLMessage.PROPOSE == msg.getPerformative()){
 					try {
-						AbstractMap.SimpleEntry<Resource, Double> pair = (SimpleEntry<Resource, Double>) msg.getContentObject();
+						AbstractMap.SimpleEntry<Resource, Double> offerPair = (AbstractMap.SimpleEntry<Resource, Double>) msg.getContentObject();
+						
 						//						System.out.println(this.myAgent.getLocalName() + " received costs of " + pair.getValue()+ " for " + pair.getKey());
-						if(bestCost.get(pair.getKey())<= pair.getValue())
+						if(offer.getBestCost().get(offerPair.getKey())<= offerPair.getValue())
 						{
 							//Intermediate
 							send(createMessage(ACLMessage.REJECT_PROPOSAL, "REJECT", msg.getSender()));
 						}
 						else{
 							//Intermediate
-							bestCost.put(pair.getKey(), pair.getValue());
-							send(createMessage(ACLMessage.ACCEPT_PROPOSAL, "ACCEPT", msg.getSender()));	
-						}						
-						aggCost=0;
-						for (Resource key : bestCost.keySet()){
-							aggCost = aggCost + bestCost.get(key);
+							offer.setBestCost(offerPair.getKey(), offerPair.getValue());
+							ACLMessage reply = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
+							reply.addReceiver(msg.getSender());
+							reply.setLanguage("Java");
+							reply.setOntology("");
+							reply.setContentObject(offerPair.getKey());
+							this.myAgent.send(reply);
+//							gui.updateLogTextArea(offer.getBestCost().toString() + " ; " + offerPair.getKey() + " : " + offerPair.getValue());
 						}
-						gui.updateAggCost(aggCost);
+						offer.setAggCost(0);
+						for (Resource key : offer.getBestCost().keySet()){
+							offer.setAggCost(offer.getAggCost() + offer.getBestCost().get(key));
+						}
+						gui.updateAggCost(offer.getAggCost());
+
 					} catch (UnreadableException e) {
+						e.printStackTrace();
+					} catch (IOException e) {
 						e.printStackTrace();
 					}
 				}
 				//Actions performed when a resource agents confirms he is responsible for a resource and has
 				//received the offer
 				if(ACLMessage.CONFIRM == msg.getPerformative()){
-					try {
-						Resource r = (Resource) msg.getContentObject();
-						Set<AID> tmp = agentsResMap.get(r);
-						if(tmp!=null){
-							tmp.add(msg.getSender());
-						}else{
-							tmp = new HashSet<AID>();
-							tmp.add(msg.getSender());
-						}
-						agentsResMap.put(r, tmp);
-					} catch (UnreadableException e) {
-						e.printStackTrace();
+					Resource r = Resource.valueOf(msg.getContent());
+					Set<AID> tmp = offer.getAgentsResMap().get(r);
+					if(tmp!=null){
+						tmp.add(msg.getSender());
+					}else{
+						tmp = new HashSet<AID>();
+						tmp.add(msg.getSender());
 					}
+					offer.putAgentsResMap(r, tmp);
 				}
 				if(ACLMessage.REFUSE == msg.getPerformative()){
+					gui.updateAggCost("INFINITY");
 					try{
 						Resource r = (Resource) msg.getContentObject();
-						System.err.println(msg.getSender().getLocalName() +" refused the offer ");
-						Set<AID> tmp = agentsResMap.get(r);	
+						gui.updateLogTextArea(msg.getSender().getLocalName() +" refused the offer ");
+						Set<AID> tmp = offer.getAgentsResMap().get(r);	
 						if(tmp!= null)
 						{
 							tmp.remove(msg.getSender());
@@ -124,9 +130,9 @@ public class ServiceAggregatorAgent extends AbstractAgent{
 								reply.setSender(this.myAgent.getAID());
 								reply.addReceiver(msg.getSender());
 								//all others
-								Iterator<Resource> it = agentsResMap.keySet().iterator();
+								Iterator<Resource> it = offer.getAgentsResMap().keySet().iterator();
 								while(it.hasNext()){
-									tmp = agentsResMap.get(it.next());
+									tmp = offer.getAgentsResMap().get(it.next());
 									for(AID a : tmp){
 										reply.addReceiver(a);
 									}
@@ -140,9 +146,9 @@ public class ServiceAggregatorAgent extends AbstractAgent{
 							reply.setSender(this.myAgent.getAID());
 							reply.addReceiver(msg.getSender());
 							//all others
-							Iterator<Resource> it = agentsResMap.keySet().iterator();
+							Iterator<Resource> it = offer.getAgentsResMap().keySet().iterator();
 							while(it.hasNext()){
-								tmp = agentsResMap.get(it.next());
+								tmp = offer.getAgentsResMap().get(it.next());
 								for(AID a : tmp){
 									reply.addReceiver(a);
 								}
@@ -163,11 +169,41 @@ public class ServiceAggregatorAgent extends AbstractAgent{
 	 * @author stefan
 	 *
 	 */
-	private class RestartBehaviour extends SimpleBehaviour{
+	public class RestartBehaviour extends SimpleBehaviour{
 		boolean finished = false;
 		@Override
 		public void action() {
-
+			gui.updateLogTextArea("-------------- Restarting --------------");
+			ACLMessage msg = new ACLMessage(ACLMessage.PROPAGATE);
+			msg.setSender(this.myAgent.getAID());
+			msg.setLanguage("Java");
+			msg.setOntology("");
+			List<Resource> list = Resource.allValuesAsList();
+			for(Resource r : list){
+				DFAgentDescription dfd = new DFAgentDescription();
+				ServiceDescription sd = new ServiceDescription();
+				sd.setType(r.toString());
+				sd.setName("Agent_"+r.toString());
+				dfd.addServices(sd);
+				DFAgentDescription[] resAgents;
+				
+				try {
+					resAgents = DFService.search(this.myAgent, dfd);
+					gui.updateLogTextArea("Resetting " + resAgents.length);
+					//Adding relevant agents to the receiver list
+					for(DFAgentDescription a : resAgents)
+					{
+						a.getName();
+						msg.addReceiver(a.getName());
+					}
+				} catch (FIPAException e) {
+					e.printStackTrace();
+				}
+			}
+		
+			
+			this.myAgent.send(msg);
+			finished=true;
 		}
 		@Override
 		public boolean done() {
@@ -177,75 +213,65 @@ public class ServiceAggregatorAgent extends AbstractAgent{
 	}
 	public class ServiceAggStartBehaviour extends SimpleBehaviour {
 		private boolean finished = false;
-		private Offer offer;
 		public ServiceAggStartBehaviour(Agent a, Offer o){
 			super(a);
 			ServiceAggregatorAgent serviceAgg = (ServiceAggregatorAgent) a;
-			serviceAgg.setOffer(o);
-			this.offer = o;
+			offer = o;
 		}
 		@Override
 		public void action() {;
-		System.out.println("--------------------- Received an offer ---------------------");
+		gui.updateLogTextArea("--------------------- Received an offer ---------------------");
+		offer.setAggCost(0);
 		HashMap<Resource, Byte> activeObjectMap = (HashMap<Resource, Byte>) offer.getActiveObjectMap();
 		HashMap<Resource, Double> map = new HashMap<Resource, Double>();
 		Iterator<Resource> it = activeObjectMap.keySet().iterator();
-		activeObjectMap.size();
+		ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
+		msg.setSender(this.myAgent.getAID());
+		msg.setLanguage("Java");
+		msg.setOntology("");
 		while(it.hasNext())
 		{
 			Resource currRes = it.next();
 			//Initialize the current responsible agents with empty set
-			agentsResMap = new HashMap<Resource, Set<AID>>();
+			offer.setAgentsResMap(new HashMap<Resource, Set<AID>>());
 			Set<AID> tmp = new HashSet<AID>();
-			agentsResMap.put(currRes, tmp);;
-			//Create a entry with 0 in the currBestCost map
+			offer.putAgentsResMap(currRes, tmp);
+			//Create a entry with max_value in the offer's currBestCostMap
 			map.put(currRes, Double.MAX_VALUE);
+			System.err.println(currRes);
 			//Search the DF for agents responsible for the current resource
 			DFAgentDescription dfd = new DFAgentDescription();
 			ServiceDescription sd = new ServiceDescription();
 			sd.setType(currRes.toString());
-			sd.setName("Agent_"+currRes.toString());
+			sd.setName("Resource");
 			dfd.addServices(sd);
 			try {
 				DFAgentDescription[] resAgents = DFService.search(this.myAgent, dfd);
-				System.out.println("Found " + resAgents.length + " agent(s) for resource " + currRes );
-				//Contact agent to inform him of a new offer and submit it to him
-				ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
-				msg.setSender(this.myAgent.getAID());
-				msg.setLanguage("Java");
-				msg.setContentObject(activeObjectMap);
-				msg.setOntology("");
+				gui.updateLogTextArea("Found " + resAgents.length + " agent(s) for resource " + currRes );
+				//Adding relevant agents to the receiver list
 				for(DFAgentDescription a : resAgents)
 				{
 					a.getName();
 					msg.addReceiver(a.getName());
 				}
-				this.myAgent.send(msg);
 			} catch (FIPAException e) {
 				System.err.println("Error contacting DF service");
 				e.printStackTrace();
 			} 
-			catch (IOException e) {
-				System.err.println("Error converting Offer object");
-				e.printStackTrace();
-			}
 		}
-		((ServiceAggregatorAgent) this.myAgent).setCurrBestCost(map);
+		try {
+			msg.setContentObject(offer);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		offer.setBestCost(map);
+		this.myAgent.send(msg);
 		finished = true;
 		}
+
 		@Override
 		public boolean done() {
 			return finished;
 		}
-	}
-	/**
-	 * Setting an current offer object in Service Aggregator
-	 * @param o
-	 */
-	public void setOffer(Offer o){
-		this.offer = o;
-	}
-	public void setCurrBestCost(HashMap<Resource, Double> map){
-		this.bestCost = map;
 	}
 }
