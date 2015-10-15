@@ -1,5 +1,6 @@
 package wendtris;
 
+import java.awt.Color;
 import java.io.Serializable;
 
 import javax.swing.JTextField;
@@ -50,12 +51,10 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 //			if (e.getSource() == MainWindow.this.getMoveRightButton()) 
 //				moveOfferRight(e);
 			if (e.getSource() == MainWindow.this.getAcceptButton()){ 
-				updateLogTextAreaAccept(e);
-				acceptActiveObject(e);
+				serviceAggregator.addBehaviour(serviceAggregator.new AcceptBehaviour());
 			}
 			if (e.getSource() == MainWindow.this.getRejectButton()) {
-				updateLogTextAreaReject(e);
-				rejectActiveObject(e);
+				serviceAggregator.addBehaviour(serviceAggregator.new RejectBehaviour());
 			}
 			if (e.getSource() == MainWindow.this.getOffer()) {
 				updatePricePerResTextField(e); 
@@ -66,13 +65,12 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 			}
 			if (e.getSource() == MainWindow.this.getClearResButton()){ 
 				System.err.println("GetClearRes");
+				serviceAggregator.addBehaviour(serviceAggregator.new RestartBehaviour());
 				initNewGame(e);
 				initLogTextArea(e);
 				enableAcceptButton(e);
-				serviceAggregator.addBehaviour(serviceAggregator.new RestartBehaviour());
 			}
 			if (e.getSource() == MainWindow.this.getOffer()){
-				//TODO Changes in my space -> activate Service Aggregator
 				serviceAggregator.addBehaviour(serviceAggregator.new ServiceAggStartBehaviour(serviceAggregator, offer));
 				updateStepTextField(e);
 			}
@@ -159,16 +157,13 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 		}
 	}
 	/**
-	 * connEtoM12:  (JButton4.action.actionPerformed(java.awt.event.ActionEvent) --> JTextArea1.append(Ljava.lang.String;)V)
+	 * Update Log Text Area with the information required with a accepted offer
 	 * @param arg1 java.awt.event.ActionEvent
 	 */
-	private void updateLogTextAreaAccept(java.awt.event.ActionEvent arg1) {
-		try {
+	public void updateLogTextAreaAccept() {
 			initLogTextArea().append(getOffer().getActiveObjectDescription());
 			initLogTextArea().append( "; true\n");
-		} catch (java.lang.Throwable ivjExc) {
-			handleException(ivjExc);
-		}
+		
 	}
 	/**
 	 * connEtoM13:  (JButton5.action.actionPerformed(java.awt.event.ActionEvent) --> JTextArea1.setText(Ljava.lang.String;)V)
@@ -186,7 +181,7 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	 * connEtoM17:  ( (JButton2,action.actionPerformed(java.awt.event.ActionEvent) --> mySpace,moveObjectRight()Z).normalResult --> JButton4.setEnabled(Z)V)
 	 * @param result boolean
 	 */
-	private void toggleAcceptButton(boolean result) {
+	public void toggleAcceptButton(boolean result) {
 		try {
 			getAcceptButton().setEnabled(result);
 		} catch (java.lang.Throwable ivjExc) {
@@ -203,6 +198,12 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 		} catch (java.lang.Throwable ivjExc) {
 			handleException(ivjExc);
 		}
+	}
+	public void greenAcceptButton(){
+		acceptButton.setBackground(Color.GREEN);
+	}
+	public void redAcceptButton(){
+		acceptButton.setBackground(Color.RED);
 	}
 	/**
 	 * connEtoM19:  (MyDemonstrator.window.windowClosed(java.awt.event.WindowEvent) --> mySpace.close()V)
@@ -286,48 +287,32 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 		}
 	}
 	/**
-	 * connEtoM5:  (JButton3.action.actionPerformed(java.awt.event.ActionEvent) --> JTextArea1.append(Ljava.lang.String;)V)
-	 * @param arg1 java.awt.event.ActionEvent
+	 * Updating the log text area with information on a reject object
+	 * @param 
 	 */
-	private void updateLogTextAreaReject(java.awt.event.ActionEvent arg1) {
-		try {
+	public void updateLogTextAreaReject() {
 			initLogTextArea().append(getOffer().getActiveObjectDescription());
-
 			initLogTextArea().append( "; false\n");
-
-		} catch (java.lang.Throwable ivjExc) {
-			handleException(ivjExc);
-		}
 	}
 	/**
-	 * connEtoM6:  (JButton4.action.actionPerformed(java.awt.event.ActionEvent) --> mySpace.acceptActiveObject()Z)
-	 * @return boolean
-	 * @param arg1 java.awt.event.ActionEvent
+	 * Accepting a offer
+	 * @return boolean Success of accepting an offer
 	 */
-	private boolean acceptActiveObject(java.awt.event.ActionEvent arg1) {
-		boolean connEtoM6Result = false;
-		try {
-			connEtoM6Result = getOffer().acceptActiveObject();
-			toggleAcceptButton(connEtoM6Result);
-		} catch (java.lang.Throwable ivjExc) {
-			handleException(ivjExc);
-		}
-		return connEtoM6Result;
+	public boolean acceptActiveObject() {
+		boolean success = false;
+			success = getOffer().acceptActiveObject();
+			toggleAcceptButton(success);
+		return success;
 	}
 	/**
-	 * connEtoM7:  (JButton3.action.actionPerformed(java.awt.event.ActionEvent) --> mySpace.rejectActiveObject()Z)
-	 * @return boolean
-	 * @param arg1 java.awt.event.ActionEvent
+	 * Rejecting an offer
+	 * @return boolean Success of rejecting an offer
 	 */
-	private boolean rejectActiveObject(java.awt.event.ActionEvent arg1) {
-		boolean connEtoM7Result = false;
-		try {
-			connEtoM7Result = getOffer().rejectActiveObject();
-			this.toggleAcceptButton(connEtoM7Result);
-		} catch (java.lang.Throwable ivjExc) {
-			handleException(ivjExc);
-		}
-		return connEtoM7Result;
+	public boolean rejectActiveObject() {
+		boolean success = false;
+			success = getOffer().rejectActiveObject();
+			this.toggleAcceptButton(success);
+		return success;
 	}
 	/**
 	 * connEtoM8:  (JButton5.action.actionPerformed(java.awt.event.ActionEvent) --> mySpace.newGame()V)
@@ -900,13 +885,13 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 		case 65:
 		case 40: 	if( getAcceptButton().isEnabled())
 			ae = new java.awt.event.ActionEvent( this, 0, null);
-		acceptActiveObject( ae);
-		updateLogTextAreaAccept( ae);
+		acceptActiveObject( );
+		updateLogTextAreaAccept();
 		break;
 		case 82:
 		case 38: 	ae = new java.awt.event.ActionEvent( this, 0, null);
-		rejectActiveObject( ae);
-		updateLogTextAreaReject( ae);
+		rejectActiveObject( );
+		updateLogTextAreaReject( );
 		break;
 
 		default :	System.out.println(e.toString());

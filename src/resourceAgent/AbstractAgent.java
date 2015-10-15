@@ -1,5 +1,23 @@
 package resourceAgent;
 
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.TransformerFactoryConfigurationError;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+
+import org.w3c.dom.Element;
+import org.w3c.dom.Document;
+
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.SimpleBehaviour;
@@ -18,11 +36,28 @@ public abstract class AbstractAgent extends Agent{
 	protected DFAgentDescription dfAgentDescr;
 	//Service Name
 	protected String serviceName;
+	
+	//Path to History Information of agents
+	protected String path;
+	//XML Doc
+	protected Document doc;
+	
+	//History Information Root
+	protected Element root;
 	/**
 	 * Setup Method
 	 */
 	protected void setup(){
 		//Printout a welcome message
+		try {
+			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+			DocumentBuilder db;
+			db = dbf.newDocumentBuilder();
+			doc = db.newDocument();
+		} catch (ParserConfigurationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		//TODO Insert common options, read them from the input if Necessary
 		id = getAID();
 		System.out.println("Hi! I am" + getAID().getName()+ " Ready!");
@@ -75,5 +110,28 @@ public abstract class AbstractAgent extends Agent{
 		return msg;
 	}
 	
-	
+	/**
+	 * Write History Information to a xml file
+	 * @throws TransformerFactoryConfigurationError 
+	 * @throws TransformerException 
+	 * @throws FileNotFoundException 
+	 */
+	protected void writeHistoryToXML() {
+		Transformer tr;
+		try {
+			tr = TransformerFactory.newInstance().newTransformer();
+			tr.setOutputProperty(OutputKeys.INDENT, "yes");
+			tr.setOutputProperty(OutputKeys.METHOD, "xml");
+			tr.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+			tr.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
+			tr.transform(new DOMSource(doc), new StreamResult(new FileOutputStream(
+					path)));
+		} catch (TransformerConfigurationException | TransformerFactoryConfigurationError e) {			
+			e.printStackTrace();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (TransformerException e) {
+			e.printStackTrace();
+		}
+	}
 }

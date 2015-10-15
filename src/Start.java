@@ -35,20 +35,20 @@ public class Start {
 			System.out.println("RMA agent launched...");
 			System.out.println("Setting up resource agents ...");
 			//args[0] =  # resource slots
-			AgentController res1 = mainContainer.createNewAgent("Res1", "resourceAgent.ResourceAgent",  new String[] {"ONE"});
-//			AgentController res2 = mainContainer.createNewAgent("Res2", "resourceAgent.ResourceAgent", new String[] {"TWO"});
-//			AgentController res3 = mainContainer.createNewAgent("Res3", "resourceAgent.ResourceAgent",  new String[] {"THREE"});
-//			AgentController res4 = mainContainer.createNewAgent("Res4", "resourceAgent.ResourceAgent", new String[] {"FOUR"});
-			AgentController res5 = mainContainer.createNewAgent("Res5", "resourceAgent.ResourceAgent",  new String[] {"FIVE"});
-			AgentController res6 = mainContainer.createNewAgent("Res6", "resourceAgent.ResourceAgent", new String[] {"SIX"});
-			AgentController res7 = mainContainer.createNewAgent("Res7", "resourceAgent.ResourceAgent",  new String[] {"SEVEN"});
-			AgentController res8 = mainContainer.createNewAgent("Res8", "resourceAgent.ResourceAgent", new String[] {"EIGHT"});
-			AgentController res9 = mainContainer.createNewAgent("Res9", "resourceAgent.ResourceAgent",  new String[] {"NINE"});
-			AgentController res10 = mainContainer.createNewAgent("Res10", "resourceAgent.ResourceAgent", new String[] {"TEN"});
+			AgentController res1 = mainContainer.createNewAgent("Res1", "resourceAgent.ResourceAgent",  new String[] {"1","ONE"});
+//			AgentController res2 = mainContainer.createNewAgent("Res2", "resourceAgent.ResourceAgent", new String[] {"1","TWO"});
+//			AgentController res3 = mainContainer.createNewAgent("Res3", "resourceAgent.ResourceAgent",  new String[] {"1","THREE"});
+//			AgentController res4 = mainContainer.createNewAgent("Res4", "resourceAgent.ResourceAgent", new String[] {"1","FOUR"});
+			AgentController res5 = mainContainer.createNewAgent("Res5", "resourceAgent.ResourceAgent",  new String[] {"1","FIVE"});
+			AgentController res6 = mainContainer.createNewAgent("Res6", "resourceAgent.ResourceAgent", new String[] {"1","SIX"});
+			AgentController res7 = mainContainer.createNewAgent("Res7", "resourceAgent.ResourceAgent",  new String[] {"1","SEVEN"});
+			AgentController res8 = mainContainer.createNewAgent("Res8", "resourceAgent.ResourceAgent", new String[] {"1","EIGHT"});
+			AgentController res9 = mainContainer.createNewAgent("Res9", "resourceAgent.ResourceAgent",  new String[] {"1","NINE"});
+			AgentController res10 = mainContainer.createNewAgent("Res10", "resourceAgent.ResourceAgent", new String[] {"1","TEN"});
 //			AgentController res11 = mainContainer.createNewAgent("Res11", "resourceAgent.ResourceAgent",  new String[] {"ELEVEN"});
 //			AgentController res12 = mainContainer.createNewAgent("Res12", "resourceAgent.ResourceAgent", new String[] {"TWELVE"});
 			
-			AgentController multiAgent = mainContainer.createNewAgent("MultiAgent", "resourceAgent.ResourceAgent", new String[] {"TEN", "ONE"});
+			AgentController multiAgent = mainContainer.createNewAgent("MultiAgent", "resourceAgent.ResourceAgent", new String[] {"1.2","TEN", "ONE"});
 			System.out.println("Setting up service aggregator agent ...");
 			AgentController serviceAggAgent= mainContainer.createNewAgent("ServiceAggregator", "resourceAgent.ServiceAggregatorAgent", new String[] {});
 

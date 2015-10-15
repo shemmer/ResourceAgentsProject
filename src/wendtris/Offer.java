@@ -24,11 +24,11 @@ public class Offer implements Serializable {
 	private int ID;
 	java.util.Random random = new java.util.Random();
 
-	private Map<Resource, Byte> activeObjectMap;
-	public Map<Resource, Byte> getActiveObjectMap() {
+	private HashMap<Resource, Byte> activeObjectMap;
+	public HashMap<Resource, Byte> getActiveObjectMap() {
 		return activeObjectMap;
 	}
-	public void setActiveObjectMap(Map<Resource, Byte> activeObjectMap) {
+	public void setActiveObjectMap(HashMap<Resource, Byte> activeObjectMap) {
 		this.activeObjectMap = activeObjectMap;
 	}
 	private int objectNumber = 0;	
@@ -260,10 +260,9 @@ public class Offer implements Serializable {
 		return bestCost;
 	}
 	public void setBestCost(HashMap<Resource, Double> bestCost) {
-		System.err.println(bestCost);
 		this.bestCost = bestCost;
 	}
-	public void setBestCost(Resource key, double value){
+	public void putBestCost(Resource key, double value){
 		this.bestCost.put(key, value);
 	}
 	public HashMap<Resource, Set<AID>> getAgentsResMap() {
@@ -273,7 +272,6 @@ public class Offer implements Serializable {
 		this.agentsResMap = agentsResMap;
 	}
 	public void putAgentsResMap(Resource key, Set<AID> value) {
-		
 		this.agentsResMap.put(key, value);
 	}
 	public void addAgentsResMap(Resource key, AID value){
