@@ -1,6 +1,7 @@
 package wendtris;
 
 import java.awt.Color;
+import java.awt.event.KeyEvent;
 import java.io.Serializable;
 
 import javax.swing.JTextField;
@@ -17,7 +18,7 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	
 	private javax.swing.JPanel mainPanel = null;
 	private OfferCanvas offerCanvas = null;
-	private Offer offer = null;
+	private OfferFactory offer = null;
 	private CapacityCanvas capacityCanvas = null;
 	private javax.swing.JPanel ivjJPanel1 = null;
 //	private javax.swing.JButton moveLeftButton = null;
@@ -57,23 +58,13 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 				serviceAggregator.addBehaviour(serviceAggregator.new RejectBehaviour());
 			}
 			if (e.getSource() == MainWindow.this.getOffer()) {
-				updatePricePerResTextField(e); 
-				updatePriceOrderTextField(e);
-				updateIncomeTextField(e);
-				repaintOfferCanvas(e);
-				repaintCapacityCanvas(e);
+				serviceAggregator.addBehaviour(serviceAggregator.new ServiceAggStartBehaviour(serviceAggregator, offer));
 			}
 			if (e.getSource() == MainWindow.this.getClearResButton()){ 
-				System.err.println("GetClearRes");
 				serviceAggregator.addBehaviour(serviceAggregator.new RestartBehaviour());
-				initNewGame(e);
-				initLogTextArea(e);
-				enableAcceptButton(e);
+			
 			}
-			if (e.getSource() == MainWindow.this.getOffer()){
-				serviceAggregator.addBehaviour(serviceAggregator.new ServiceAggStartBehaviour(serviceAggregator, offer));
-				updateStepTextField(e);
-			}
+			
 		};
 		public void itemStateChanged(java.awt.event.ItemEvent e) {
 			if (e.getSource() == MainWindow.this.getLimitCheckBox()) 
@@ -107,27 +98,26 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 		this.serviceAggregator= (ServiceAggregatorAgent) a;
 		initialize();
 	}
-
-	/**
-	 * connEtoM1:  (JButton1.action.actionPerformed(java.awt.event.ActionEvent) --> mySpace.moveObjectLeft()Z)
-	 * @return boolean
-	 * @param arg1 java.awt.event.ActionEvent
-	 */
-	private boolean moveOfferLeft(java.awt.event.ActionEvent arg1) {
-		boolean connEtoM1Result = false;
-		try {
-			connEtoM1Result = getOffer().moveObjectLeft();
-			toggleAcceptButton(connEtoM1Result);
-		} catch (java.lang.Throwable ivjExc) {
-			handleException(ivjExc);
-		}
-		return connEtoM1Result;
-	}
+//
+//	/**
+//	 * connEtoM1:  (JButton1.action.actionPerformed(java.awt.event.ActionEvent) --> mySpace.moveObjectLeft()Z)
+//	 * @return boolean
+//	 * @param arg1 java.awt.event.ActionEvent
+//	 */
+//	private boolean moveOfferLeft(java.awt.event.ActionEvent arg1) {
+//		boolean connEtoM1Result = false;
+//		try {
+//			connEtoM1Result = getOffer().moveObjectLeft();
+//			toggleAcceptButton(connEtoM1Result);
+//		} catch (java.lang.Throwable ivjExc) {
+//			handleException(ivjExc);
+//		}
+//		return connEtoM1Result;
+//	}
 	/**
 	 * connEtoM10:  (mySpace.action.actionPerformed(java.awt.event.ActionEvent) --> JTextField2.text)
-	 * @param arg1 java.awt.event.ActionEvent
 	 */
-	private void updatePriceOrderTextField(java.awt.event.ActionEvent arg1) {
+	public void updatePriceOrderTextField() {
 		try {
 			getPriceOrderTextField().setText(String.valueOf(getOffer().getActiveObjectIncome()));
 		} catch (java.lang.Throwable ivjExc) {
@@ -136,9 +126,8 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	}
 	/**
 	 * connEtoM11:  (mySpace.action.actionPerformed(java.awt.event.ActionEvent) --> JTextField3.text)
-	 * @param arg1 java.awt.event.ActionEvent
 	 */
-	private void updateIncomeTextField(java.awt.event.ActionEvent arg1) {
+	public void updateIncomeTextField() {
 		try {
 			getIncomeTextField().setText(String.valueOf(getOffer().getProfit()));
 		} catch (java.lang.Throwable ivjExc) {
@@ -192,12 +181,8 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	 * connEtoM18:  (JButton5.action.actionPerformed(java.awt.event.ActionEvent) --> JButton4.enabled)
 	 * @param arg1 java.awt.event.ActionEvent
 	 */
-	private void enableAcceptButton(java.awt.event.ActionEvent arg1) {
-		try {
+	public void enableAcceptButton() {
 			getAcceptButton().setEnabled(true);
-		} catch (java.lang.Throwable ivjExc) {
-			handleException(ivjExc);
-		}
 	}
 	public void greenAcceptButton(){
 		acceptButton.setBackground(Color.GREEN);
@@ -216,26 +201,25 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 			handleException(ivjExc);
 		}
 	}
-	/**
-	 * connEtoM2:  (JButton2.action.actionPerformed(java.awt.event.ActionEvent) --> mySpace.moveObjectRight()Z)
-	 * @return boolean
-	 * @param arg1 java.awt.event.ActionEvent
-	 */
-	private boolean moveOfferRight(java.awt.event.ActionEvent arg1) {
-		boolean connEtoM2Result = false;
-		try {
-			connEtoM2Result = getOffer().moveObjectRight();
-			toggleAcceptButton(connEtoM2Result);
-		} catch (java.lang.Throwable ivjExc) {
-			handleException(ivjExc);
-		}
-		return connEtoM2Result;
-	}
+//	/**
+//	 * connEtoM2:  (JButton2.action.actionPerformed(java.awt.event.ActionEvent) --> mySpace.moveObjectRight()Z)
+//	 * @return boolean
+//	 * @param arg1 java.awt.event.ActionEvent
+//	 */
+//	private boolean moveOfferRight(java.awt.event.ActionEvent arg1) {
+//		boolean connEtoM2Result = false;
+//		try {
+//			connEtoM2Result = getOffer().moveObjectRight();
+//			toggleAcceptButton(connEtoM2Result);
+//		} catch (java.lang.Throwable ivjExc) {
+//			handleException(ivjExc);
+//		}
+//		return connEtoM2Result;
+//	}
 	/**
 	 * connEtoM20:  (mySpace.action.actionPerformed(java.awt.event.ActionEvent) --> JTextField4.text)
-	 * @param arg1 java.awt.event.ActionEvent
 	 */
-	private void updateStepTextField(java.awt.event.ActionEvent arg1) {
+	public void updateStepTextField() {
 		try {
 			getStepTextField().setText(getOffer().getStep());
 		} catch (java.lang.Throwable ivjExc) {
@@ -268,7 +252,7 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	 * connEtoM3:  (mySpace.action.actionPerformed(java.awt.event.ActionEvent) --> mySpaceCanvas.repaint()V)
 	 * @param arg1 java.awt.event.ActionEvent
 	 */
-	private void repaintCapacityCanvas(java.awt.event.ActionEvent arg1) {
+	public void repaintCapacityCanvas() {
 		try {
 			getCapacityCanvas().repaint();
 		} catch (java.lang.Throwable ivjExc) {
@@ -279,12 +263,8 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	 * connEtoM4:  (mySpace.action.actionPerformed(java.awt.event.ActionEvent) --> myObjectCanvas.repaint()V)
 	 * @param arg1 java.awt.event.ActionEvent
 	 */
-	private void repaintOfferCanvas(java.awt.event.ActionEvent arg1) {
-		try {
-			getOfferCanvas().repaint();
-		} catch (java.lang.Throwable ivjExc) {
-			handleException(ivjExc);
-		}
+	public void repaintOfferCanvas() {
+			getOfferCanvas().repaint();	
 	}
 	/**
 	 * Updating the log text area with information on a reject object
@@ -294,42 +274,37 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 			initLogTextArea().append(getOffer().getActiveObjectDescription());
 			initLogTextArea().append( "; false\n");
 	}
-	/**
-	 * Accepting a offer
-	 * @return boolean Success of accepting an offer
-	 */
-	public boolean acceptActiveObject() {
-		boolean success = false;
-			success = getOffer().acceptActiveObject();
-			toggleAcceptButton(success);
-		return success;
-	}
-	/**
-	 * Rejecting an offer
-	 * @return boolean Success of rejecting an offer
-	 */
-	public boolean rejectActiveObject() {
-		boolean success = false;
-			success = getOffer().rejectActiveObject();
-			this.toggleAcceptButton(success);
-		return success;
-	}
+//	/**
+//	 * Accepting a offer
+//	 * @return boolean Success of accepting an offer
+//	 */
+//	public boolean acceptActiveObject() {
+//		boolean success = false;
+//			success = getOffer().acceptActiveObject();
+//			toggleAcceptButton(success);
+//		return success;
+//	}
+//	/**
+//	 * Rejecting an offer
+//	 * @return boolean Success of rejecting an offer
+//	 */
+//	public boolean rejectActiveObject() {
+//		boolean success = false;
+//			success = getOffer().rejectActiveObject();
+//			this.toggleAcceptButton(success);
+//		return success;
+//	}
 	/**
 	 * connEtoM8:  (JButton5.action.actionPerformed(java.awt.event.ActionEvent) --> mySpace.newGame()V)
 	 * @param arg1 java.awt.event.ActionEvent
 	 */
-	private void initNewGame(java.awt.event.ActionEvent arg1) {
-		try {
+	public void initNewGame() {
 			getOffer().newGame();
-		} catch (java.lang.Throwable ivjExc) {
-			handleException(ivjExc);
-		}
 	}
 	/**
 	 * connEtoM9:  (mySpace.action.actionPerformed(java.awt.event.ActionEvent) --> JTextField1.text)
-	 * @param arg1 java.awt.event.ActionEvent
 	 */
-	private void updatePricePerResTextField(java.awt.event.ActionEvent arg1) {
+	public void updatePricePerResTextField() {
 		try {
 			getPricePerResTextField().setText(getOffer().getFormatedActiveObjectPriceTag());
 		} catch (java.lang.Throwable ivjExc) {
@@ -742,7 +717,7 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	 * @return javax.swing.JTextArea
 	 */
 	//TODO Log
-	private javax.swing.JTextArea initLogTextArea() {
+	public javax.swing.JTextArea initLogTextArea() {
 		if (logTextArea == null) {
 			try {
 				logTextArea = new javax.swing.JTextArea();
@@ -811,10 +786,10 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 		}
 		return offerCanvas;
 	}
-	private Offer getOffer() {
+	private OfferFactory getOffer() {
 		if (offer == null) {
 			try {
-				offer = new wendtris.Offer();
+				offer = new wendtris.OfferFactory();
 			} catch (java.lang.Throwable ivjExc) {
 				handleException(ivjExc);
 			}
@@ -869,46 +844,10 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 		}
 		show();
 	}
-	/**
-	 * Invoked when a key has been pressed.
-	 */
-	public void keyPressed(java.awt.event.KeyEvent e) {
-		int key = e.getKeyCode();
-		java.awt.event.ActionEvent ae = null;
-		switch (key) {
-		case 37:	moveOfferLeft( new java.awt.event.ActionEvent(this, 0, null));
-		//getmySpace().moveObjectLeft();
-		break;
-		case 39: 	moveOfferRight( new java.awt.event.ActionEvent(this, 0, null));
-		//getmySpace().moveObjectRight();
-		break;
-		case 65:
-		case 40: 	if( getAcceptButton().isEnabled())
-			ae = new java.awt.event.ActionEvent( this, 0, null);
-		acceptActiveObject( );
-		updateLogTextAreaAccept();
-		break;
-		case 82:
-		case 38: 	ae = new java.awt.event.ActionEvent( this, 0, null);
-		rejectActiveObject( );
-		updateLogTextAreaReject( );
-		break;
-
-		default :	System.out.println(e.toString());
-
-		}
-
-
-	}
-	/**
-	 * Invoked when a key has been released.
-	 */
 	public void keyReleased(java.awt.event.KeyEvent e) {}
-	/**
-	 * Invoked when a key has been typed.
-	 * This event occurs when a key press is followed by a key release.
-	 */
 	public void keyTyped(java.awt.event.KeyEvent e) {
-
+	}
+	@Override
+	public void keyPressed(KeyEvent e) {	
 	}
 }

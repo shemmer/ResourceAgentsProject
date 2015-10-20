@@ -5,8 +5,10 @@ import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.HashMap;
+import java.util.HashSet;
 
 import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 
 import jade.core.AID;
 import jade.core.Agent;
@@ -76,9 +78,9 @@ public class ResourceAgent extends AbstractAgent{
 					requestElement= doc.createElement("request");
 					root.appendChild(requestElement);
 					for(Resource resType : capacityMap.keySet()){
-						if(!offer.containsKey(resType))break;
+						if(!offer.containsKey(resType))continue;
 						//ResourceType handled by ResourceAgent and capacity sufficient
-						if(offer.containsKey(resType) && capacityMap.get(resType) - offer.get(resType) >=0){
+						if(offer.containsKey(resType) && capacityMap.get(resType) - offer.get(resType) >=0){						
 							ACLMessage reply = new ACLMessage(ACLMessage.CONFIRM);
 							reply.addReceiver(msg.getSender());
 							reply.setContent(resType.toString());
@@ -86,7 +88,8 @@ public class ResourceAgent extends AbstractAgent{
 							reply.setOntology("");
 							reply.setSender(this.myAgent.getAID());
 							this.myAgent.send(reply);
-							this.myAgent.addBehaviour(new CalculatingBehaviour(this.myAgent, msg.getSender(),resType));
+							this.myAgent.addBehaviour(new CalculatingBehaviour(this.myAgent, msg.getSender()));
+							break;
 						}else{
 							ACLMessage reply = new ACLMessage(ACLMessage.REFUSE);
 							reply.setSender(this.myAgent.getAID());
@@ -99,43 +102,50 @@ public class ResourceAgent extends AbstractAgent{
 							reply.setOntology("");
 							reply.addReceiver(msg.getSender());
 							this.myAgent.send(reply);
-							this.myAgent.addBehaviour(new AbortBehaviour());
 						}
 					}
+					
 				}
 				if(ACLMessage.ACCEPT_PROPOSAL == msg.getPerformative()){
-					//XML Stuff
-					Element accept = doc.createElement("ACCEPTED");
-					requestElement.appendChild(accept);
-					writeHistoryToXML();
-					
 					//Reserving capacity for the current
 					try {
-//						System.err.println(this.myAgent.getLocalName()  + " received accepted proposal " + (Resource) msg.getContentObject());
-						this.myAgent.addBehaviour(new ReservingBehaviour(this.myAgent,
-								(SimpleEntry<Resource, Double>) msg.getContentObject()));
+						System.err.println(this.myAgent.getLocalName()  + " ACCEPT");
+						SimpleEntry<Resource, Double> pair = 
+								(SimpleEntry<Resource, Double>) msg.getContentObject();
+						this.myAgent.addBehaviour(new ReservingBehaviour(this.myAgent,pair));
+						
+						//XML Stuff
+						NodeList requestNodes = requestElement.getElementsByTagName(pair.getKey().toString());
+						Element resElement = (Element) requestNodes.item(0);
+						resElement.setAttribute("accepted","true");
+						writeHistoryToXML();
+		
 					} catch (UnreadableException e) {
 						e.printStackTrace();
 					}
 				}
 				if(ACLMessage.REJECT_PROPOSAL==msg.getPerformative()){
-//										System.out.println("Agent " + this.myAgent.getLocalName() +
+//					System.out.println("Agent " + this.myAgent.getLocalName() +
 //												" COST_REJECT");
-					Element reject = doc.createElement("REJECTED");
-					requestElement.appendChild(reject);
+//					Element reject = doc.createElement("REJECTED");
+//					requestElement.appendChild(reject);
 					writeHistoryToXML();
+					
+					//TODO Offer should be set to null
 				}
+				//"Cancel" behaviour i.e. the service aggregator aborts the current offer because
+				//one of the resource does not have any agents with capacity left
 				if(ACLMessage.CANCEL== msg.getPerformative()){
 					//					System.out.println("Agent " + this.myAgent.getLocalName() +
 					//							" : CANCEL " );
-					this.myAgent.addBehaviour(new AbortBehaviour());
+					offer=null;
 				}
+				//Reset Behaviour
 				if(ACLMessage.PROPAGATE == msg.getPerformative()){
 					for(Resource r : capacityMap.keySet()){
 						capacityMap.put(r, 6);
 					}
 					offer = null;
-					System.out.println(capacityMap);
 				}
 			}
 		}
@@ -147,40 +157,77 @@ public class ResourceAgent extends AbstractAgent{
 	private class CalculatingBehaviour extends SimpleBehaviour {
 		private boolean finished = false;
 		private AID serviceAgg;
-		private Resource resType;
-		public CalculatingBehaviour(Agent me, AID serviceAgg, Resource resType)
+		public CalculatingBehaviour(Agent me, AID serviceAgg)
 		{
 			this.myAgent=me;
 			this.serviceAgg= serviceAgg;
-			this.resType = resType;
 		}
 		@Override
 		public void action() {
-			byte quantity = offer.get(resType);
-			cost.put(resType, quantity * cost.get(resType));
-			AbstractMap.SimpleEntry<Resource, Double> pair = new AbstractMap.SimpleEntry<>(resType,cost.get(resType));
+			//TODO Bottleneck -> Use requested capacity in relation to 
+			//requested capacity of other resources to determine a cost
+			boolean bottleneck =false;
+			byte tmpValue=0;
+			HashMap<Resource, Double> costMap = new 
+					HashMap<Resource, Double>();
+			for(Resource r : offer.keySet()){
+				if(offer.get(r)>tmpValue){
+					tmpValue = offer.get(r);
+				} 
+			}//tmpValue = highest requested capacity
+			for(Resource r1: offer.keySet()){
+				if(capacityMap.containsKey(r1) && offer.get(r1)==tmpValue) bottleneck=true;
+			}
+			for(Resource r : capacityMap.keySet()){
+				byte quantity = offer.get(r);
+				double currCost = 0.0;
+				if(bottleneck){
+					currCost = 2* quantity * cost.get(r);
+				}else{
+					currCost = quantity * cost.get(r);
+				}
+				costMap.put(r, currCost);
+
+				//Reading history information
+				Element docElement = doc.getDocumentElement();
+				NodeList requestNodes = docElement.getElementsByTagName("request");
+				for(int i=0; i<requestNodes.getLength(); i++){
+					Element requestElement = (Element) requestNodes.item(i);
+					NodeList resourceNodes = requestElement.getChildNodes();
+					for(int j = 0; j < resourceNodes.getLength(); j++){
+						Element resElement = (Element) resourceNodes.item(j);
+						if(resElement.getTagName().equals(r.toString())){
+							if(resElement.hasAttribute("accepted")){
+								System.out.println(r + " accepted "+ resElement.getAttribute("cost"));
+							}else{
+								System.out.println(r + " not accepted " + resElement.getAttribute("cost"));
+							}
+						}
+					}
+				}
+				
+				//XML Stuff
+				Element resElement = doc.createElement(r.toString());
+				resElement.setTextContent(offer.get(r).toString());
+				resElement.setAttribute("capacity", capacityMap.get(r).toString());
+				resElement.setAttribute("cost", Double.toString(cost.get(r)));
+				requestElement.appendChild(resElement);
+			}
+			
 			ACLMessage msg = new ACLMessage(ACLMessage.PROPOSE);
 			msg.setSender(this.myAgent.getAID());
 			msg.setLanguage("Java");
 			try {
-				msg.setContentObject(pair);
+				msg.setContentObject(costMap);
 			} catch (IOException e) {
 				e.printStackTrace();
-			}
-			
+			}	
 			msg.setOntology("");
 			msg.addReceiver(serviceAgg);
 			this.myAgent.send(msg);
 			
-			//XML Stuff
-			Element resElement = doc.createElement(resType.toString());
-			resElement.setTextContent(offer.get(resType).toString());
-			resElement.setAttribute("capacity", capacityMap.get(resType).toString());
-			resElement.setAttribute("cost", Double.toString(cost.get(resType)));
-			requestElement.appendChild(resElement);
-			
 			this.finished=true;
-			cost.put(resType, (double) 1);
+			
 		}
 		@Override
 		public boolean done() {
@@ -189,23 +236,7 @@ public class ResourceAgent extends AbstractAgent{
 	}
 
 	/**
-	 * Abort Behavior
-	 */
-	private class AbortBehaviour extends SimpleBehaviour {
-		private boolean finished = false;
-		@Override
-		public void action() {
-			System.err.println(this.myAgent.getLocalName() + ": Aborting");
-			offer = null;
-			this.finished = true;
-		}
-		@Override
-		public boolean done() {
-			return finished;
-		}
-	}
-	/**
-	 * Abort Behavior
+	 * Reserving Behavior
 	 */
 	private class ReservingBehaviour extends SimpleBehaviour {
 		private boolean finished = false;
@@ -216,11 +247,9 @@ public class ResourceAgent extends AbstractAgent{
 		}
 		@Override
 		public void action() {
-			System.err.println(this.myAgent.getLocalName() + ": Reserving "  + currCost.getKey());
-			System.err.println(offer);
 			capacityMap.put(currCost.getKey(), capacityMap.get(currCost.getKey()) - offer.get(currCost.getKey()));
 			profit = profit + currCost.getValue();
-			
+//			System.err.println(this.myAgent.getLocalName() + ": Reserving "  + currCost.getKey() +" with an aggregated profit of" + profit);
 			this.finished = true;
 		}
 		@Override

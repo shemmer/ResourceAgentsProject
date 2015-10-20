@@ -5,7 +5,7 @@ import java.awt.*;
 import java.awt.event.*;
 
 public class OfferCanvas extends javax.swing.JPanel {
-	private Offer offer = null;
+	private OfferFactory offer = null;
 	
 	/*	Gibt an, ob gerade pausiert wird. */
 	private Color color[] = { Color.lightGray, Color.red, Color.cyan, Color.green, Color.orange, Color.blue, 
@@ -19,7 +19,7 @@ public OfferCanvas() {
  * Erstellungsdatum: (08.12.2002 15:40:09)
  * @return wendtris.MySpace
  */
-public Offer getOffer() {
+public OfferFactory getOffer() {
 	return offer;
 }
 public void paintComponent(java.awt.Graphics g) {
@@ -79,7 +79,7 @@ public void paintComponent(java.awt.Graphics g) {
 	g2d.drawLine( xGap+(int)(xDist*maxCols)-2, yGap, xGap+(int)(xDist*maxCols)-2, yGap + yPaint);
 		
 }
-public void setOffer ( Offer ms) {
+public void setOffer ( OfferFactory ms) {
 	offer = ms;
 	repaint();
 }

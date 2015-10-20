@@ -2,6 +2,7 @@ package resourceAgent;
 
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -16,6 +17,8 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 import org.w3c.dom.Document;
 
 import jade.core.AID;
@@ -131,6 +134,27 @@ public abstract class AbstractAgent extends Agent{
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		} catch (TransformerException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private void readHistoryInfoMemory() {
+		Document dom;
+		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+		try {
+			DocumentBuilder db = dbf.newDocumentBuilder();
+			dom = db.parse(this.path);
+			Element doc = dom.getDocumentElement();
+			NodeList shapeNodes = doc.getElementsByTagName("shape");
+			for (int i = 0; i < shapeNodes.getLength(); i++) {
+				Element shapeElement = (Element) shapeNodes.item(i);
+			}
+		} catch (SAXException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			System.out.println("Could not find memory file: "
+					+ path + ".");
+		} catch (ParserConfigurationException e) {
 			e.printStackTrace();
 		}
 	}
