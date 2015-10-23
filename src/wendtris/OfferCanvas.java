@@ -50,6 +50,7 @@ public void paintComponent(java.awt.Graphics g) {
 	if( offer.getActiveObjectState())
 	for( int i=0; i<maxCols; i++) if( activeObject[i] != 0) {
 		g2d.fillRect( xGap+(int)(xDist*i), yGap+yPaint-(int)(yDist*offer.getActiveObjectPriceTag()+yDist*activeObject[i] ), (int)(xDist+1), (int)(yDist*activeObject[i]));
+		
 	}
 	
 	g2d.setColor(Color.black);

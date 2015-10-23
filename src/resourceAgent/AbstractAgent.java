@@ -31,8 +31,6 @@ import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.lang.acl.ACLMessage;
 
 public abstract class AbstractAgent extends Agent{
-	//Agent Identifier
-	protected AID id;
 	//Type of agent
 	protected String[] service;
 	// Directory-Facilitator Description of the agent
@@ -61,9 +59,6 @@ public abstract class AbstractAgent extends Agent{
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		//TODO Insert common options, read them from the input if Necessary
-		id = getAID();
-		System.out.println("Hi! I am" + getAID().getName()+ " Ready!");
 	}
 	/**
 	 * Clean-up operations
@@ -75,8 +70,6 @@ public abstract class AbstractAgent extends Agent{
 		catch(Exception e){
 			System.err.println("Could not deregister agent " + getAID().getName());
 		}
-		//Printout a dismissal message
-		System.out.println(getAID().getName() + " says Good Bye!");
 	}
 	/**
 	 * Registers each agent at the df that is can be found via the given type
@@ -85,7 +78,7 @@ public abstract class AbstractAgent extends Agent{
 	protected void registerAtDF(){
 		String serv = "";
 		dfAgentDescr = new DFAgentDescription();
-		dfAgentDescr.setName(id);
+		dfAgentDescr.setName(this.getAID());
 		for(int i = 0; i<service.length; i++){
 			ServiceDescription sd = new ServiceDescription();
 			sd.setName(serviceName);
@@ -98,14 +91,13 @@ public abstract class AbstractAgent extends Agent{
 		} catch (FIPAException e) {
 			e.printStackTrace();
 		}
-		System.out.println(getLocalName() + " registered at DF - Type: "+ serv + "; Service: "+ serviceName);
 	}
 	/**
 	 * Send a message to a single agent
 	 */
 	protected ACLMessage createMessage(int performative, String content, AID agent){
 		ACLMessage msg = new ACLMessage(performative);
-		msg.setSender(id);
+		msg.setSender(this.getAID());
 		msg.addReceiver(agent);
 		msg.setLanguage("Java");
 		msg.setContent(content);
