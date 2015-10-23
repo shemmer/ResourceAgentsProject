@@ -18,10 +18,8 @@ import jade.lang.acl.ACLMessage;
 import jade.lang.acl.UnreadableException;
 
 public class ResourceAgent extends AbstractAgent{
-	//ServiceAggregatorAgent ID
-	protected AID serviceAgg;
 	//Current costs per res unit
-	protected HashMap<Resource ,Double> cost;
+	protected HashMap<Resource ,Double> costPerUnit;
 	//Current remaining capacity 
 	protected HashMap<Resource, Integer> capacityMap;
 	//Current offer
@@ -29,7 +27,6 @@ public class ResourceAgent extends AbstractAgent{
 	//Current offer map
 	protected HashMap<Resource, Byte> offer;
 	protected Element requestElement;
-	
 	
 	/**
 	 * Overloading setup to also execute the Registration of the agent with the DF
@@ -43,15 +40,20 @@ public class ResourceAgent extends AbstractAgent{
 		capacityMap=new HashMap<Resource,Integer>();
 		this.service = new String[args.length-1];
 		this.serviceName ="Resource";
-		cost = new HashMap<Resource, Double>();
+		costPerUnit = new HashMap<Resource, Double>();
 		for(int i =1; i<args.length; i++){
-			this.cost.put(Resource.valueOf(args[i].toString()), Double.valueOf((String) args[0]));
+			this.costPerUnit.put(Resource.valueOf(args[i].toString()), Double.valueOf((String) args[0]));
 			capacityMap.put(Resource.valueOf(args[i].toString()), 6);
 			this.service[i-1] = args[i].toString();
 		}
+		
+		
 		this.registerAtDF();
+		
 		addBehaviour(new ResourceReceiverBehaviour(this));
 	}
+
+	
 	
 	/**
 	 * Receiver Behavior
@@ -68,7 +70,8 @@ public class ResourceAgent extends AbstractAgent{
 				block(1000);
 			}else{
 				//New Offer
-				if(ACLMessage.INFORM == msg.getPerformative()){
+				if(ACLMessage.REQUEST == msg.getPerformative()){
+//					System.err.println(this.myAgent.getLocalName()  + " :: REQUEST");
 					try {
 						offer = (HashMap<Resource, Byte>) msg.getContentObject();
 					} catch (UnreadableException e) {
@@ -77,39 +80,42 @@ public class ResourceAgent extends AbstractAgent{
 					}
 					requestElement= doc.createElement("request");
 					root.appendChild(requestElement);
+					boolean enough =false;
+					Resource res = null;
 					for(Resource resType : capacityMap.keySet()){
 						if(!offer.containsKey(resType))continue;
-						//ResourceType handled by ResourceAgent and capacity sufficient
-						if(offer.containsKey(resType) && capacityMap.get(resType) - offer.get(resType) >=0){						
-							ACLMessage reply = new ACLMessage(ACLMessage.CONFIRM);
-							reply.addReceiver(msg.getSender());
-							reply.setContent(resType.toString());
-							reply.setLanguage("Java");
-							reply.setOntology("");
-							reply.setSender(this.myAgent.getAID());
-							this.myAgent.send(reply);
-							this.myAgent.addBehaviour(new CalculatingBehaviour(this.myAgent, msg.getSender()));
-							break;
+						//ResourceType handled by ResourceAgent and capacity sufficient for one resource though
+						if(capacityMap.get(resType) - offer.get(resType) >=0){
+//							System.err.println(myAgent.getLocalName() + " :" + (capacityMap.get(resType) - offer.get(resType)));
+							enough=true;
 						}else{
-							ACLMessage reply = new ACLMessage(ACLMessage.REFUSE);
-							reply.setSender(this.myAgent.getAID());
-							reply.setLanguage("Java");
-							try {
-								reply.setContentObject(resType);
-							} catch (IOException e) {
-								e.printStackTrace();
-							}
-							reply.setOntology("");
-							reply.addReceiver(msg.getSender());
-							this.myAgent.send(reply);
+							res= resType;
+//							System.err.println("FALSE");
+							enough=false;
+							break;
 						}
 					}
-					
-				}
+					if(enough){
+						this.myAgent.addBehaviour(new CalculatingBehaviour(this.myAgent, msg.getSender()));
+					}else{
+						ACLMessage reply = new ACLMessage(ACLMessage.REFUSE);
+						reply.setSender(this.myAgent.getAID());
+						reply.setLanguage("Java");
+						try {
+							reply.setContentObject(res);
+						} catch (IOException e) {
+						    e.printStackTrace();
+						}
+						reply.setOntology("");
+						reply.addReceiver(msg.getSender());
+						this.myAgent.send(reply);
+						
+					}
+				} 
 				if(ACLMessage.ACCEPT_PROPOSAL == msg.getPerformative()){
 					//Reserving capacity for the current
 					try {
-						System.err.println(this.myAgent.getLocalName()  + " ACCEPT");
+//						System.err.println(this.myAgent.getLocalName()  + " ACCEPT");
 						SimpleEntry<Resource, Double> pair = 
 								(SimpleEntry<Resource, Double>) msg.getContentObject();
 						this.myAgent.addBehaviour(new ReservingBehaviour(this.myAgent,pair));
@@ -131,7 +137,6 @@ public class ResourceAgent extends AbstractAgent{
 //					requestElement.appendChild(reject);
 					writeHistoryToXML();
 					
-					//TODO Offer should be set to null
 				}
 				//"Cancel" behaviour i.e. the service aggregator aborts the current offer because
 				//one of the resource does not have any agents with capacity left
@@ -145,6 +150,9 @@ public class ResourceAgent extends AbstractAgent{
 					for(Resource r : capacityMap.keySet()){
 						capacityMap.put(r, 6);
 					}
+					for(Resource r : costPerUnit.keySet()){
+						costPerUnit.put(r, 6.0);
+					}
 					offer = null;
 				}
 			}
@@ -152,7 +160,7 @@ public class ResourceAgent extends AbstractAgent{
 
 	}
 	/**
-	 * Calculating Behavior
+	 * Calculating Behaviour
 	 */
 	private class CalculatingBehaviour extends SimpleBehaviour {
 		private boolean finished = false;
@@ -164,12 +172,11 @@ public class ResourceAgent extends AbstractAgent{
 		}
 		@Override
 		public void action() {
-			//TODO Bottleneck -> Use requested capacity in relation to 
-			//requested capacity of other resources to determine a cost
+			HashMap<Resource, Double> local_resourceCostMap = new 
+					HashMap<Resource, Double>();
+			//Is bottleneck?
 			boolean bottleneck =false;
 			byte tmpValue=0;
-			HashMap<Resource, Double> costMap = new 
-					HashMap<Resource, Double>();
 			for(Resource r : offer.keySet()){
 				if(offer.get(r)>tmpValue){
 					tmpValue = offer.get(r);
@@ -178,15 +185,12 @@ public class ResourceAgent extends AbstractAgent{
 			for(Resource r1: offer.keySet()){
 				if(capacityMap.containsKey(r1) && offer.get(r1)==tmpValue) bottleneck=true;
 			}
+			
+			//Iterating through all resources that are in the capacityMap
 			for(Resource r : capacityMap.keySet()){
-				byte quantity = offer.get(r);
-				double currCost = 0.0;
-				if(bottleneck){
-					currCost = 2* quantity * cost.get(r);
-				}else{
-					currCost = quantity * cost.get(r);
-				}
-				costMap.put(r, currCost);
+				//Skipping every resource, that is not in the offer
+				if(!offer.containsKey(r))continue;
+				double currCost = costPerUnit.get(r);
 
 				//Reading history information
 				Element docElement = doc.getDocumentElement();
@@ -198,19 +202,39 @@ public class ResourceAgent extends AbstractAgent{
 						Element resElement = (Element) resourceNodes.item(j);
 						if(resElement.getTagName().equals(r.toString())){
 							if(resElement.hasAttribute("accepted")){
-								System.out.println(r + " accepted "+ resElement.getAttribute("cost"));
+								if(Double.parseDouble(resElement.getAttributeNode("cost").getValue()) <= currCost) {
+									//For each accepted offer where the current costs are lower or equal
+									//to the cost in the accepted offer
+									currCost = currCost + i * 0.1;
+								}else{
+									
+								}
 							}else{
-								System.out.println(r + " not accepted " + resElement.getAttribute("cost"));
+								if(Double.parseDouble(resElement.getAttributeNode("cost").getValue()) >= currCost){ 
+									currCost = currCost - i * 0.1;
+								}else{
+									
+								}
 							}
 						}
 					}
 				}
+				costPerUnit.put(r, currCost);
+
+
+				byte quantity = offer.get(r);
+				if(bottleneck){
+					currCost = 2* quantity * costPerUnit.get(r);
+				}else{
+					currCost = quantity * costPerUnit.get(r);
+				}
 				
+				local_resourceCostMap.put(r, currCost);
 				//XML Stuff
 				Element resElement = doc.createElement(r.toString());
 				resElement.setTextContent(offer.get(r).toString());
 				resElement.setAttribute("capacity", capacityMap.get(r).toString());
-				resElement.setAttribute("cost", Double.toString(cost.get(r)));
+				resElement.setAttribute("cost", Double.toString(local_resourceCostMap.get(r)));
 				requestElement.appendChild(resElement);
 			}
 			
@@ -218,7 +242,7 @@ public class ResourceAgent extends AbstractAgent{
 			msg.setSender(this.myAgent.getAID());
 			msg.setLanguage("Java");
 			try {
-				msg.setContentObject(costMap);
+				msg.setContentObject(local_resourceCostMap);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}	
@@ -247,9 +271,10 @@ public class ResourceAgent extends AbstractAgent{
 		}
 		@Override
 		public void action() {
+//			System.out.println("------------Reserving " + myAgent.getLocalName() + currCost.getKey());
 			capacityMap.put(currCost.getKey(), capacityMap.get(currCost.getKey()) - offer.get(currCost.getKey()));
 			profit = profit + currCost.getValue();
-//			System.err.println(this.myAgent.getLocalName() + ": Reserving "  + currCost.getKey() +" with an aggregated profit of" + profit);
+//			System.err.println("#### Profit: " + this.myAgent.getLocalName() +" ; " + profit);
 			this.finished = true;
 		}
 		@Override

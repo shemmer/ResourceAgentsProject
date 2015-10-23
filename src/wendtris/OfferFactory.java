@@ -4,6 +4,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -14,6 +15,7 @@ import resourceAgent.Resource;
 public class OfferFactory implements Serializable {
 	public static final int left = 1, right = 2, accept = 3, reject = 4;
 
+	//"Memory" of the past objects -> each cell contains a activeObjectID or 0
 	public byte[][] space = new byte[maxCols][maxRows];
 
 	private boolean activeObjectState = false;
@@ -25,19 +27,18 @@ public class OfferFactory implements Serializable {
 	java.util.Random random = new java.util.Random();
 
 	private HashMap<Resource, Byte> activeObjectMap;
-	public HashMap<Resource, Byte> getActiveObjectMap() {
-		return activeObjectMap;
-	}
-	public void setActiveObjectMap(HashMap<Resource, Byte> activeObjectMap) {
-		this.activeObjectMap = activeObjectMap;
-	}
+	
 	private int objectNumber = 0;	
-	public static final int maxRows = 6, maxCols = 12;
-
+	public static int maxRows = 12, maxCols = 12;
+	
 	//Current best costs
 	private HashMap<Resource, Double> bestCost;
 	//Current available agents for one resource
-	private HashMap<Resource, Set<AID>> agentsResMap;
+	private HashMap<Resource, Set<AID>> responsibleAgentsForRes;
+	private HashMap<AID, HashSet<Resource>> contactedAgents;
+	
+	
+	
 	//Current aggregated costs
 	private double aggCost;
 
@@ -45,7 +46,7 @@ public class OfferFactory implements Serializable {
 	private static final byte[][] thisObject = 
 		{ { 0,0,0,0,0,0,0,0,0,0,0,0 }, // dummy, da wir nicht mit objectID = 0 arbeiten können
 				{ 0,0,0,0,1,2,3,2,1,0,0,0 },
-				{ 1,0,0,0,1,1,1,1,0,0,0,0 },
+				{ 0,0,0,0,1,1,1,1,0,0,0,0 },
 				{ 0,0,0,0,0,2,2,0,0,0,0,0 }, 
 				{ 0,0,0,0,2,2,1,1,0,0,0,0 },
 				{ 0,0,0,0,1,3,2,2,1,0,0,0 },
@@ -54,11 +55,18 @@ public class OfferFactory implements Serializable {
 	private int minPrice = 1, priceSpan = 9; // thus maxPrice = 10;
 	private int profit = 0;
 
-	private transient java.util.Vector actionListeners = new java.util.Vector();
-
 	private java.text.DecimalFormat df = new java.text.DecimalFormat();
 
-	private int step = 0, maxStep = 20;
+	private int step = 0, maxStep = 50;
+	public void setStep(int step) {
+		this.step = step;
+	}
+	public int getMaxStep() {
+		return maxStep;
+	}
+	public void setMaxStep(int maxStep) {
+		this.maxStep = maxStep;
+	}
 	private boolean limitSteps = true;
 	public OfferFactory() {
 		super();
@@ -77,18 +85,18 @@ public class OfferFactory implements Serializable {
 				y++; activeObject[x]--;
 			}
 		}
-		
 		profit += activeObjectIncome;
 		activeObjectState = false;
-		boolean r = activateObject();
 		objectNumber++;
-		notifyActionEvent();
-		return r;
+		return true;
 	}
 	/**
 	 * Ein Objekt mit der Parameterbezeichnung wird in unser Feld eingefuegt.
 	 */
-	private boolean activateObject() {
+	public boolean activateObject() {
+		this.bestCost = new HashMap<Resource, Double>();
+		this.aggCost = 0;
+		this.setContactedAgents(new HashMap<AID, HashSet<Resource>>());
 		ID = random.nextInt(100);
 		if( limitSteps && step>=maxStep) return false;
 		if( activeObjectState) System.out.println("Error at activeObject()");
@@ -115,9 +123,19 @@ public class OfferFactory implements Serializable {
 
 		return testResouces();
 	}
-	public void addActionListener( ActionListener a) {
-		if(actionListeners == null) actionListeners = new java.util.Vector();
-		if ( !actionListeners.contains(a) ) actionListeners.addElement(a);	
+	/**
+	 * 
+	 * @return
+	 */
+	public HashMap<Resource, Byte> getActiveObjectMap() {
+		return activeObjectMap;
+	}
+	/**
+	 * 
+	 * @param activeObjectMap
+	 */
+	public void setActiveObjectMap(HashMap<Resource, Byte> activeObjectMap) {
+		this.activeObjectMap = activeObjectMap;
 	}
 	/**
 	 * Die Beschreibung der Methode hier eingeben.
@@ -138,8 +156,9 @@ public class OfferFactory implements Serializable {
 	public String getFormatedActiveObjectPriceTag() { return df.format(((double)activeObjectPriceTag));}
 	public int getMaxPriceTag() { return minPrice+priceSpan+4; }
 	public int getProfit() { return profit; }
-	public String getStep() {
-		return step+(limitSteps?" / "+maxStep:"");
+
+	public int getStep() {
+		return step;
 	}
 	/**
 	 * Die Beschreibung der Methode hier eingeben.
@@ -157,12 +176,10 @@ public class OfferFactory implements Serializable {
 			switch (direction) {
 			case accept: 
 				acceptActiveObject();
-				notifyActionEvent();
 				return true;
 
 			case reject: 
 				rejectActiveObject();
-				notifyActionEvent();
 				return true;
 
 			}
@@ -176,30 +193,15 @@ public class OfferFactory implements Serializable {
 		profit 		= 0;
 		activeObjectState = false;
 		step		= 0;
-		activateObject();
-		notifyActionEvent();
 	}
-	public void notifyActionEvent () {
 
-		java.util.Vector v;
-		synchronized ( this ) {
-			v = (java.util.Vector) actionListeners.clone();
-		}
-		int cnt = v.size();
-		for ( int i=0; i<cnt; i++) ((ActionListener) v.elementAt(i)).actionPerformed( new ActionEvent( this, ActionEvent.ACTION_PERFORMED, "Hello"));
-	}
 	/**
 	 * Setzt das aktive Objekt zurück. Damit kann das Nächste erscheinen.
 	 */
 	public boolean rejectActiveObject() {
 		activeObjectState = false;
-		boolean r = activateObject();
 		objectNumber++;
-		notifyActionEvent();
-		return r;
-	}
-	public void removeActionListener( ActionListener a) {
-		if ( actionListeners.contains(a) ) actionListeners.removeElement(a);
+		return true;
 	}
 	/**
 	 * Die Beschreibung der Methode hier eingeben.
@@ -208,8 +210,6 @@ public class OfferFactory implements Serializable {
 	 */
 	public void setLimitSteps(boolean newLimitSteps) {
 		limitSteps = newLimitSteps;
-		if( step == maxStep && !activeObjectState) activateObject();
-		else notifyActionEvent();
 	}
 	private boolean testResouces() {
 		for( int x=0; x<maxCols; x++) if( activeObject[x] > 0) {
@@ -231,23 +231,45 @@ public class OfferFactory implements Serializable {
 	public void putBestCost(Resource key, double value){
 		this.bestCost.put(key, value);
 	}
-	public HashMap<Resource, Set<AID>> getAgentsResMap() {
-		return agentsResMap;
+	//TODO Rethink this! This is kinda bad design
+	//Also the ServiceAggregator consistently fire the calculating behaviour to early
+	//We do need a structure like that -> Informing agents of an abort? Do we really need to do that?
+	//Disabling the button would suffice actually
+	//Then we can just keep track of unique agents involved in offer proposal
+//	public HashMap<Resource, Set<AID>> getResponsibleAgentsForRes() {
+//		return responsibleAgentsForRes;
+//	}
+//	public void setResponsibleAgentsForRes(HashMap<Resource, Set<AID>> agentsResMap) {
+//		this.responsibleAgentsForRes = agentsResMap;
+//	}
+//	public void addResponsibleAgentsForRes(Resource key, AID value){
+//		if(responsibleAgentsForRes.containsKey(key)){
+//			Set<AID> agents = this.responsibleAgentsForRes.get(key);
+//			agents.add(value);
+//		}else{
+//			HashSet<AID> agents = new HashSet<AID>();
+//			agents.add(value);
+//			responsibleAgentsForRes.put(key, agents);
+//		}
+//	}
+	
+	public void setContactedAgents(HashMap<AID, HashSet<Resource>> map) {
+		this.contactedAgents = map;
 	}
-	public void setAgentsResMap(HashMap<Resource, Set<AID>> agentsResMap) {
-		this.agentsResMap = agentsResMap;
+	public HashMap<AID, HashSet<Resource>> getContactedAgents() {
+		return contactedAgents;
 	}
-	public void putAgentsResMap(Resource key, Set<AID> value) {
-		this.agentsResMap.put(key, value);
-	}
-	public void addAgentsResMap(Resource key, AID value){
-		Set<AID> a = this.agentsResMap.get(key);
-		if(a!=null){
-			a.add(value);
+	public void addContactedAgents(AID contactedAgent, Resource res) {
+		if(contactedAgents.containsKey(contactedAgent)){
+			this.contactedAgents.get(contactedAgent).add(res);
 		}else{
-			System.err.println("Agent Set not initialized");
+			HashSet<Resource> tmp = new HashSet<Resource>();
+			tmp.add(res);
+			this.contactedAgents.put(contactedAgent, tmp);
 		}
 	}
+	
+//	
 	public double getAggCost() {
 		return aggCost;
 	}

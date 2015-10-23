@@ -19,6 +19,9 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	private javax.swing.JPanel mainPanel = null;
 	private OfferCanvas offerCanvas = null;
 	private OfferFactory offer = null;
+	public void setOffer(OfferFactory offer) {
+		this.offer = offer;
+	}
 	private CapacityCanvas capacityCanvas = null;
 	private javax.swing.JPanel ivjJPanel1 = null;
 //	private javax.swing.JButton moveLeftButton = null;
@@ -26,6 +29,8 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	private javax.swing.JButton rejectButton = null;
 	private javax.swing.JButton acceptButton = null;
 	private javax.swing.JButton clearButton = null;
+	private javax.swing.JButton startButton = null;
+	private javax.swing.JButton startAutomatedButton = null;
 	private javax.swing.JLabel pricePerResLabel = null;
 	private javax.swing.JLabel priceOrderLabel = null;
 	private javax.swing.JLabel incomeLabel = null;
@@ -43,9 +48,14 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	private javax.swing.JLabel aggCostLabel = null;
 	private javax.swing.JTextField aggCostField = null;
 
+	private javax.swing.JLabel profitLabel = null;
+	private javax.swing.JTextField profitField = null;
+
+	
 	private ServiceAggregatorAgent serviceAggregator;
 
 	class IvjEventHandler implements java.awt.event.ActionListener, java.awt.event.ItemListener, java.awt.event.WindowListener, Serializable {
+
 		public void actionPerformed(java.awt.event.ActionEvent e) {
 //			if (e.getSource() == MainWindow.this.getMoveLeftButton()) 
 //				moveOfferLeft(e);
@@ -55,17 +65,28 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 				serviceAggregator.addBehaviour(serviceAggregator.new AcceptBehaviour());
 			}
 			if (e.getSource() == MainWindow.this.getRejectButton()) {
-				serviceAggregator.addBehaviour(serviceAggregator.new RejectBehaviour());
-			}
-			if (e.getSource() == MainWindow.this.getOffer()) {
-				serviceAggregator.addBehaviour(serviceAggregator.new ServiceAggStartBehaviour(serviceAggregator, offer));
+				serviceAggregator.addBehaviour(serviceAggregator.new RejectBehaviour(serviceAggregator));
 			}
 			if (e.getSource() == MainWindow.this.getClearResButton()){ 
 				serviceAggregator.addBehaviour(serviceAggregator.new RestartBehaviour());
-			
+			}
+			if(e.getSource() == MainWindow.this.getStartButton()){
+				offer.newGame();
+				enableAcceptButton();
+				enableRejectButton();
+				serviceAggregator.unautomate();
+				serviceAggregator.addBehaviour(serviceAggregator.new ServiceAggStartBehaviour(serviceAggregator));
+			}
+			if(e.getSource() == MainWindow.this.getAutomatedStartButton()){
+				offer.newGame();
+				serviceAggregator.automate();
+				serviceAggregator.addBehaviour(serviceAggregator.new ServiceAggStartBehaviour(serviceAggregator));		
 			}
 			
 		};
+		private void enableRejectButton() {
+			getRejectButton().setEnabled(true);
+		}
 		public void itemStateChanged(java.awt.event.ItemEvent e) {
 			if (e.getSource() == MainWindow.this.getLimitCheckBox()) 
 				setLimitToOffer(e);
@@ -124,6 +145,21 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 			handleException(ivjExc);
 		}
 	}
+	public void updatePriceOrderTextField(String txt) {
+		try {
+			getPriceOrderTextField().setText(txt);
+		} catch (java.lang.Throwable ivjExc) {
+			handleException(ivjExc);
+		}
+	}
+	
+	public void updateProfit(String txt) {
+		try {
+			getProfitField().setText(txt);
+		} catch (java.lang.Throwable ivjExc) {
+			handleException(ivjExc);
+		}
+	}
 	/**
 	 * connEtoM11:  (mySpace.action.actionPerformed(java.awt.event.ActionEvent) --> JTextField3.text)
 	 */
@@ -134,6 +170,14 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 			handleException(ivjExc);
 		}
 	}
+	public void updateIncomeTextField(String txt) {
+		try {
+			getIncomeTextField().setText(txt);
+		} catch (java.lang.Throwable ivjExc) {
+			handleException(ivjExc);
+		}
+	}
+	
 	/**
 	 * connEtoM12:  (JButton4.action.actionPerformed(java.awt.event.ActionEvent) --> JTextArea1.append(Ljava.lang.String;)V)
 	 * @param arg1 java.awt.event.ActionEvent
@@ -221,21 +265,21 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	 */
 	public void updateStepTextField() {
 		try {
-			getStepTextField().setText(getOffer().getStep());
+			getStepTextField().setText(Integer.toString(getOffer().getStep()));
 		} catch (java.lang.Throwable ivjExc) {
 			handleException(ivjExc);
 		}
 	}
-	/**
-	 * connEtoM21:  (MyDemonstrator.initialize() --> mySpace.notifyActionEvent()V)
-	 */
-	private void notifyOffer() {
-		try {
-			getOffer().notifyActionEvent();
-		} catch (java.lang.Throwable ivjExc) {
-			handleException(ivjExc);
-		}
-	}
+//	/**
+//	 * connEtoM21:  (MyDemonstrator.initialize() --> mySpace.notifyActionEvent()V)
+//	 */
+//	private void notifyOffer() {
+//		try {
+//			getOffer().notifyActionEvent();
+//		} catch (java.lang.Throwable ivjExc) {
+//			handleException(ivjExc);
+//		}
+//	}
 	/**
 	 * connEtoM22:  (JCheckBox1.item.itemStateChanged(java.awt.event.ItemEvent) --> mySpace.setLimitSteps(Z)V)
 	 * @param arg1 java.awt.event.ItemEvent
@@ -294,13 +338,7 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 //			this.toggleAcceptButton(success);
 //		return success;
 //	}
-	/**
-	 * connEtoM8:  (JButton5.action.actionPerformed(java.awt.event.ActionEvent) --> mySpace.newGame()V)
-	 * @param arg1 java.awt.event.ActionEvent
-	 */
-	public void initNewGame() {
-			getOffer().newGame();
-	}
+	
 	/**
 	 * connEtoM9:  (mySpace.action.actionPerformed(java.awt.event.ActionEvent) --> JTextField1.text)
 	 */
@@ -336,9 +374,9 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	/**
 	 * connPtoP1SetTarget:  (mySpace.this <--> myObjectCanvas.mySpace)
 	 */
-	private void setOfferInOfferCanvas() {
+	public void setOfferInOfferCanvas(OfferFactory offer) {
 		try {
-			getOfferCanvas().setOffer(getOffer());
+			getOfferCanvas().setOffer(offer);
 		} catch (java.lang.Throwable ivjExc) {
 			handleException(ivjExc);
 		}
@@ -347,9 +385,9 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	 * connPtoP2SetTarget:  (mySpace.this <--> mySpaceCanvas.mySpace)
 	 * this.getOffer -> setOffer in CapacityCanvas also repaints the canvas
 	 */
-	private void registerOfferInCapacityCanvas() {
+	public void registerOfferInCapacityCanvas(OfferFactory offer) {
 		try {
-			getCapacityCanvas().setOffer(getOffer());
+			getCapacityCanvas().setOffer(offer);
 		} catch (java.lang.Throwable ivjExc) {
 			handleException(ivjExc);
 		}
@@ -413,6 +451,30 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 			}
 		}
 		return clearButton;
+	}
+	private javax.swing.JButton getStartButton() {
+		if (startButton == null) {
+			try {
+				startButton = new javax.swing.JButton();
+				startButton.setName("JButton5");
+				startButton.setText("Start (manual)");
+			} catch (java.lang.Throwable ivjExc) {
+				handleException(ivjExc);
+			}
+		}
+		return startButton;
+	}
+	private javax.swing.JButton getAutomatedStartButton() {
+		if (startAutomatedButton == null) {
+			try {
+				startAutomatedButton = new javax.swing.JButton();
+				startAutomatedButton.setName("JButton5");
+				startAutomatedButton.setText("Start (automatic)");
+			} catch (java.lang.Throwable ivjExc) {
+				handleException(ivjExc);
+			}
+		}
+		return startAutomatedButton;
 	}
 	private javax.swing.JCheckBox getLimitCheckBox() {
 		if (limitStepsCheckBox == null) {
@@ -598,6 +660,21 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 				constraintsJButton5.insets = new java.awt.Insets(4, 8, 4, 8);
 				getJPanel1().add(getClearResButton(), constraintsJButton5);
 
+				java.awt.GridBagConstraints constraintsStartButton = new java.awt.GridBagConstraints();
+				constraintsStartButton.gridx = 0; constraintsStartButton.gridy = 5;
+				constraintsStartButton.weightx = 2;
+				constraintsStartButton.fill = java.awt.GridBagConstraints.HORIZONTAL;
+				constraintsStartButton.insets = new java.awt.Insets(4, 8, 4, 8);
+				getJPanel1().add(getStartButton(), constraintsStartButton );
+
+				java.awt.GridBagConstraints constraintsAutomatedStartButton = new java.awt.GridBagConstraints();
+				constraintsAutomatedStartButton .gridx = 1; constraintsAutomatedStartButton .gridy = 5;
+				constraintsAutomatedStartButton .weightx= 2;
+				constraintsAutomatedStartButton .fill = java.awt.GridBagConstraints.HORIZONTAL;
+				constraintsAutomatedStartButton .insets = new java.awt.Insets(4, 8, 4, 8);
+				getJPanel1().add(getAutomatedStartButton(), constraintsAutomatedStartButton );
+//				
+				
 				java.awt.GridBagConstraints constraintsJTextField1 = new java.awt.GridBagConstraints();
 				constraintsJTextField1.gridx = 1; constraintsJTextField1.gridy = 0;
 				constraintsJTextField1.fill = java.awt.GridBagConstraints.HORIZONTAL;
@@ -668,15 +745,27 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 				constraintsAggField.weightx = 1.0;
 				constraintsAggField.insets = new java.awt.Insets(4, 4, 4, 4);
 				getJPanel1().add(this.getAggCostField(), constraintsAggField);
+//TODO
+				java.awt.GridBagConstraints constraintsProfit= new java.awt.GridBagConstraints();
+				constraintsProfit.gridx = 0; constraintsProfit.gridy = 12;
+				constraintsProfit.weightx = 1.0;
+				constraintsProfit.insets = new java.awt.Insets(4, 4, 4, 4);
+				getJPanel1().add(this.getProfitLabel(), constraintsProfit);
+
+				java.awt.GridBagConstraints constraintsProfitField= new java.awt.GridBagConstraints();
+				constraintsProfitField.gridx = 1; constraintsProfitField.gridy = 12;
+				constraintsProfitField.fill = java.awt.GridBagConstraints.HORIZONTAL;
+				constraintsProfitField.weightx = 1.0;
+				constraintsProfitField.insets = new java.awt.Insets(4, 4, 4, 4);
+				getJPanel1().add(this.getProfitField(), constraintsProfitField);
 
 			} catch (java.lang.Throwable ivjExc) {
-				// user code begin {2}
-				// user code end
 				handleException(ivjExc);
 			}
 		}
 		return ivjJPanel1;
 	}
+	
 	/**
 	 * Den Eigenschaftswert JScrollPane1 zurückgeben.
 	 * @return javax.swing.JScrollPane
@@ -821,15 +910,17 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 		getAcceptButton().addActionListener(ivjEventHandler);
 		getRejectButton().addActionListener(ivjEventHandler);
 		getClearResButton().addActionListener(ivjEventHandler);
-		getOffer().addActionListener(ivjEventHandler);
+//		getOffer().addActionListener(ivjEventHandler);
+		getStartButton().addActionListener(ivjEventHandler);
+		this.getAutomatedStartButton().addActionListener(ivjEventHandler);
 		this.addWindowListener(ivjEventHandler);
 		getLimitCheckBox().addItemListener(ivjEventHandler);
-		registerOfferInCapacityCanvas();
-		setOfferInOfferCanvas();
 	}
 	
 	private void initialize() {
 		try {
+			getAcceptButton().setEnabled(false);
+			getRejectButton().setEnabled(false);
 			setName("MyDemonstrator");
 			setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 			setVisible(true);
@@ -838,7 +929,6 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 			setTitle("Resource Allocator");
 			setContentPane(getJFrameContentPane());
 			initListeners();
-			notifyOffer();
 		} catch (java.lang.Throwable ivjExc) {
 			handleException(ivjExc);
 		}
@@ -850,4 +940,33 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	@Override
 	public void keyPressed(KeyEvent e) {	
 	}
+
+	public javax.swing.JLabel getProfitLabel() {
+		if (profitLabel == null) {
+			try {
+				profitLabel= new javax.swing.JLabel();
+				profitLabel.setName("JLabel4");
+				profitLabel.setText("Profit");
+			} catch (java.lang.Throwable ivjExc) {
+				handleException(ivjExc);
+			}
+		}
+		return profitLabel;
+	}
+
+	
+
+	public javax.swing.JTextField getProfitField() {
+		if (this.profitField == null) {
+			try {
+				this.profitField = new javax.swing.JTextField();
+				this.profitField.setName("ProfitTextField2");
+			} catch (java.lang.Throwable ivjExc) {
+				handleException(ivjExc);
+			}
+		}
+		return profitField;
+	}
+
+	
 }
