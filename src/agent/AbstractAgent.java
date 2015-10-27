@@ -1,4 +1,4 @@
-package resourceAgent;
+package agent;
 
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;

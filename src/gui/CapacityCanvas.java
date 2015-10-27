@@ -1,6 +1,9 @@
-package wendtris;
+package gui;
 
 import java.awt.geom.AffineTransform;
+
+import offer.OfferFactory;
+
 import java.awt.*;
 import java.awt.event.*;
 
@@ -48,8 +51,8 @@ public class CapacityCanvas extends javax.swing.JPanel {
 
 		for( int i=0; i<maxCols; i++){ 
 			for( int j=0; j<maxRows; j++) {
-				if( offer.space[i][j]!=0) {
-					g2d.setColor( color[offer.space[i][j]] );
+				if( offer.history[i][j]!=0) {
+					g2d.setColor( color[offer.history[i][j]] );
 					g2d.fillRect( xGap+(int)(xDist*i),  yGap+yPaint-(int)(yDist*(j+1)), (int)(xDist+1), (int)(yDist+1));
 				}
 			}

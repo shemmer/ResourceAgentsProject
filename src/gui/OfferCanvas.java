@@ -1,6 +1,9 @@
-package wendtris;
+package gui;
 
 import java.awt.geom.AffineTransform;
+
+import offer.OfferFactory;
+
 import java.awt.*;
 import java.awt.event.*;
 

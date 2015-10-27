@@ -1,4 +1,4 @@
-package resourceAgent;
+package offer;
 
 import java.util.List;
 import java.util.Random;
@@ -6,7 +6,7 @@ import java.util.Collections;
 import java.util.Arrays;
 
 public enum Resource {
-	ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT, NINE, TEN, ELEVEN, TWELVE;
+	ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT, NINE, TEN, ELEVEN, TWELVE, DUMMY, DUMMY_MAX;
 
 	int capacity = 6;
 	public int getCapacity() {

@@ -1,4 +1,4 @@
-package resourceAgent;
+package agent.resourceAgent;
 
 import java.io.File;
 import java.io.IOException;
@@ -10,16 +10,18 @@ import java.util.HashSet;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
+import agent.AbstractAgent;
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.core.behaviours.SimpleBehaviour;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.UnreadableException;
+import offer.Resource;
 
 public class ResourceAgent extends AbstractAgent{
 	//Current costs per res unit
-	protected HashMap<Resource ,Double> costPerUnit;
+	protected HashMap<Resource ,Double> baselineCostsPerRes;
 	//Current remaining capacity 
 	protected HashMap<Resource, Integer> capacityMap;
 	//Current offer
@@ -27,7 +29,10 @@ public class ResourceAgent extends AbstractAgent{
 	//Current offer map
 	protected HashMap<Resource, Byte> offer;
 	protected Element requestElement;
-	
+	protected boolean alreadyAnswered = false;
+
+	protected byte step;
+	protected byte maxstep;	
 	/**
 	 * Overloading setup to also execute the Registration of the agent with the DF
 	 */
@@ -40,9 +45,9 @@ public class ResourceAgent extends AbstractAgent{
 		capacityMap=new HashMap<Resource,Integer>();
 		this.service = new String[args.length-1];
 		this.serviceName ="Resource";
-		costPerUnit = new HashMap<Resource, Double>();
+		baselineCostsPerRes = new HashMap<Resource, Double>();
 		for(int i =1; i<args.length; i++){
-			this.costPerUnit.put(Resource.valueOf(args[i].toString()), Double.valueOf((String) args[0]));
+			this.baselineCostsPerRes.put(Resource.valueOf(args[i].toString()), Double.valueOf((String) args[0]));
 			capacityMap.put(Resource.valueOf(args[i].toString()), 6);
 			this.service[i-1] = args[i].toString();
 		}
@@ -78,38 +83,57 @@ public class ResourceAgent extends AbstractAgent{
 						System.err.println("Error deserializing offer object");
 						e.printStackTrace();
 					}
+					//Get step
+					if(offer.containsKey(Resource.DUMMY)){
+						step = offer.get(Resource.DUMMY);
+						maxstep = offer.get(Resource.DUMMY_MAX);
+						offer.remove(Resource.DUMMY);
+						offer.remove(Resource.DUMMY_MAX);
+					}
+					
+					
 					requestElement= doc.createElement("request");
 					root.appendChild(requestElement);
 					boolean enough =false;
-					Resource res = null;
-					for(Resource resType : capacityMap.keySet()){
-						if(!offer.containsKey(resType))continue;
-						//ResourceType handled by ResourceAgent and capacity sufficient for one resource though
+					HashSet<Resource> res = new HashSet<Resource>();
+			
+					for(Resource resType : offer.keySet()){
+						//IF capacity map does not contain a resource type of the offer -> skip
+						if(!capacityMap.containsKey(resType)){
+							continue;
+						}
 						if(capacityMap.get(resType) - offer.get(resType) >=0){
-//							System.err.println(myAgent.getLocalName() + " :" + (capacityMap.get(resType) - offer.get(resType)));
 							enough=true;
 						}else{
-							res= resType;
-//							System.err.println("FALSE");
+							res.add(resType);
 							enough=false;
 							break;
 						}
 					}
+//					System.out.println("#########" + this.myAgent.getLocalName() + " "  + count);
+//					System.out.println(this.myAgent.getLocalName() + enough +" enough already: " + alreadyAnswered);
+//					System.out.println(this.myAgent.getLocalName() + "  " + capacityMap);
 					if(enough){
-						this.myAgent.addBehaviour(new CalculatingBehaviour(this.myAgent, msg.getSender()));
-					}else{
-						ACLMessage reply = new ACLMessage(ACLMessage.REFUSE);
-						reply.setSender(this.myAgent.getAID());
-						reply.setLanguage("Java");
-						try {
-							reply.setContentObject(res);
-						} catch (IOException e) {
-						    e.printStackTrace();
+						if(!alreadyAnswered){
+							this.myAgent.addBehaviour(new CalculatingBehaviour(this.myAgent, msg.getSender()));
+							alreadyAnswered=true;
 						}
-						reply.setOntology("");
-						reply.addReceiver(msg.getSender());
-						this.myAgent.send(reply);
-						
+					}else{
+						if(!alreadyAnswered){
+//							System.out.println(this.myAgent.getLocalName()+ " REF");
+							ACLMessage reply = new ACLMessage(ACLMessage.REFUSE);
+							reply.setSender(this.myAgent.getAID());
+							reply.setLanguage("Java");
+							try {
+								reply.setContentObject(res);
+							} catch (IOException e) {
+							    e.printStackTrace();
+							}
+							reply.setOntology("");
+							reply.addReceiver(msg.getSender());
+							this.myAgent.send(reply);
+							alreadyAnswered=true;
+						}
 					}
 				} 
 				if(ACLMessage.ACCEPT_PROPOSAL == msg.getPerformative()){
@@ -123,18 +147,22 @@ public class ResourceAgent extends AbstractAgent{
 						//XML Stuff
 						NodeList requestNodes = requestElement.getElementsByTagName(pair.getKey().toString());
 						Element resElement = (Element) requestNodes.item(0);
-						resElement.setAttribute("accepted","true");
+						if(resElement!= null){
+							resElement.setAttribute("accepted","true");
+						}
 						writeHistoryToXML();
+						alreadyAnswered=false;
 		
 					} catch (UnreadableException e) {
 						e.printStackTrace();
 					}
 				}
 				if(ACLMessage.REJECT_PROPOSAL==msg.getPerformative()){
-//					System.out.println("Agent " + this.myAgent.getLocalName() +
-//												" COST_REJECT");
+					System.out.println("Agent " + this.myAgent.getLocalName() +
+												" COST_REJECT");
 //					Element reject = doc.createElement("REJECTED");
 //					requestElement.appendChild(reject);
+					alreadyAnswered=false;
 					writeHistoryToXML();
 					
 				}
@@ -144,17 +172,38 @@ public class ResourceAgent extends AbstractAgent{
 					//					System.out.println("Agent " + this.myAgent.getLocalName() +
 					//							" : CANCEL " );
 					offer=null;
+					alreadyAnswered=false;
 				}
 				//Reset Behaviour
 				if(ACLMessage.PROPAGATE == msg.getPerformative()){
 					for(Resource r : capacityMap.keySet()){
 						capacityMap.put(r, 6);
 					}
-					for(Resource r : costPerUnit.keySet()){
-						costPerUnit.put(r, 6.0);
+					for(Resource r : baselineCostsPerRes.keySet()){
+						baselineCostsPerRes.put(r, 6.0);
 					}
+					alreadyAnswered= false;
 					offer = null;
 				}
+				if(ACLMessage.INFORM== msg.getPerformative()){
+					//					System.out.println("Agent " + this.myAgent.getLocalName() +
+					//							" : CANCEL " );
+					ACLMessage reply = new ACLMessage(ACLMessage.INFORM_REF);
+					reply.setSender(this.myAgent.getAID());
+					reply.setLanguage("Java");
+					SimpleEntry<String, Double> pair = 
+							new SimpleEntry<String, Double>(myAgent.getLocalName(), profit);
+					try {
+						reply.setContentObject(pair);
+					} catch (IOException e) {
+					    e.printStackTrace();
+					}
+					reply.setOntology("");
+					reply.addReceiver(msg.getSender());
+					this.myAgent.send(reply);
+					alreadyAnswered=true;
+				}
+				
 			}
 		}
 
@@ -165,6 +214,7 @@ public class ResourceAgent extends AbstractAgent{
 	private class CalculatingBehaviour extends SimpleBehaviour {
 		private boolean finished = false;
 		private AID serviceAgg;
+		double totalCost;
 		public CalculatingBehaviour(Agent me, AID serviceAgg)
 		{
 			this.myAgent=me;
@@ -182,36 +232,53 @@ public class ResourceAgent extends AbstractAgent{
 					tmpValue = offer.get(r);
 				} 
 			}//tmpValue = highest requested capacity
+			int a =0;
 			for(Resource r1: offer.keySet()){
-				if(capacityMap.containsKey(r1) && offer.get(r1)==tmpValue) bottleneck=true;
+				if(capacityMap.containsKey(r1) && offer.get(r1)==tmpValue){
+					bottleneck=true;
+					a++;
+				}
 			}
-			
+			if(a== offer.size()) bottleneck = false;
+			//TODO History Information
 			//Iterating through all resources that are in the capacityMap
 			for(Resource r : capacityMap.keySet()){
 				//Skipping every resource, that is not in the offer
 				if(!offer.containsKey(r))continue;
-				double currCost = costPerUnit.get(r);
-
+				//Stored costs from the last transaction
+				double calculatedCosts = baselineCostsPerRes.get(r);
 				//Reading history information
 				Element docElement = doc.getDocumentElement();
 				NodeList requestNodes = docElement.getElementsByTagName("request");
+				//Opportunity costs of past 
+				double oppCost =0;
+				int won=0, lost=0;
 				for(int i=0; i<requestNodes.getLength(); i++){
 					Element requestElement = (Element) requestNodes.item(i);
 					NodeList resourceNodes = requestElement.getChildNodes();
 					for(int j = 0; j < resourceNodes.getLength(); j++){
 						Element resElement = (Element) resourceNodes.item(j);
 						if(resElement.getTagName().equals(r.toString())){
+							double requestCost = Double.parseDouble(resElement.getAttributeNode("cost").getValue());
+							double requestSize = Double.parseDouble(resElement.getAttributeNode("size").getValue());
+//							(i/resourceNodes.getLength());
 							if(resElement.hasAttribute("accepted")){
-								if(Double.parseDouble(resElement.getAttributeNode("cost").getValue()) <= currCost) {
+								won++;
+								if(requestCost <= calculatedCosts) {
 									//For each accepted offer where the current costs are lower or equal
 									//to the cost in the accepted offer
-									currCost = currCost + i * 0.1;
+									//i/resourceNodes.getLength -> Bewertung der Kosten je nachdem wie weit sie in der
+									//Vergangenheit liegen
+//									oppCost += (i/resourceNodes.getLength()) * ;
 								}else{
 									
 								}
 							}else{
-								if(Double.parseDouble(resElement.getAttributeNode("cost").getValue()) >= currCost){ 
-									currCost = currCost - i * 0.1;
+								lost++;
+								// Request was not accepted
+								oppCost +=   requestCost * requestSize;
+								if(requestCost >= calculatedCosts){ 
+									
 								}else{
 									
 								}
@@ -219,20 +286,39 @@ public class ResourceAgent extends AbstractAgent{
 						}
 					}
 				}
-				costPerUnit.put(r, currCost);
-
-
+				
+				System.err.println(this.myAgent.getLocalName() + " : " +oppCost);
+				
+				if(won != 0 || lost !=0){
+					double winLossRatio= won / (won+lost);
+					if(winLossRatio > 0.8){
+						baselineCostsPerRes.put(r, calculatedCosts+1);
+					}else{
+						if(winLossRatio < 0.3)
+							baselineCostsPerRes.put(r, calculatedCosts-1);
+					}
+				}
+//				baselineCostsPerRes.put(r, currCost);
 				byte quantity = offer.get(r);
-				if(bottleneck){
-					currCost = 2* quantity * costPerUnit.get(r);
-				}else{
-					currCost = quantity * costPerUnit.get(r);
+//				if(bottleneck){
+//					calculatedCosts = 2* calculatedCosts;
+//				}
+				//TODO Remaining capacity information
+				capacityMap.get(r);
+				
+				//TODO Remaining steps
+				double remainingStepRatio = 0.0;
+				remainingStepRatio = step/maxstep;
+				if(remainingStepRatio<0.5){
+					calculatedCosts *=0.75;
 				}
 				
-				local_resourceCostMap.put(r, currCost);
+				//TODO compute the total cost
+				double totalCost = quantity * calculatedCosts;
+				local_resourceCostMap.put(r, totalCost);
 				//XML Stuff
 				Element resElement = doc.createElement(r.toString());
-				resElement.setTextContent(offer.get(r).toString());
+				resElement.setAttribute("size" ,offer.get(r).toString());
 				resElement.setAttribute("capacity", capacityMap.get(r).toString());
 				resElement.setAttribute("cost", Double.toString(local_resourceCostMap.get(r)));
 				requestElement.appendChild(resElement);
@@ -274,7 +360,7 @@ public class ResourceAgent extends AbstractAgent{
 //			System.out.println("------------Reserving " + myAgent.getLocalName() + currCost.getKey());
 			capacityMap.put(currCost.getKey(), capacityMap.get(currCost.getKey()) - offer.get(currCost.getKey()));
 			profit = profit + currCost.getValue();
-//			System.err.println("#### Profit: " + this.myAgent.getLocalName() +" ; " + profit);
+			System.err.println("#### Profit: " + this.myAgent.getLocalName() +" ; " + profit);
 			this.finished = true;
 		}
 		@Override

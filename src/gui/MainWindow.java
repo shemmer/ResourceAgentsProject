@@ -1,13 +1,16 @@
-package wendtris;
+package gui;
 
 import java.awt.Color;
 import java.awt.event.KeyEvent;
 import java.io.Serializable;
+import java.util.AbstractMap.SimpleEntry;
+import java.util.HashMap;
 
 import javax.swing.JTextField;
 
+import agent.serviceAgent.ServiceAggregatorAgent;
 import jade.core.Agent;
-import resourceAgent.ServiceAggregatorAgent;
+import offer.OfferFactory;
 
 /**
  * Die Beschreibung des Typs hier eingeben.
@@ -47,9 +50,7 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 
 	private javax.swing.JLabel aggCostLabel = null;
 	private javax.swing.JTextField aggCostField = null;
-
-	private javax.swing.JLabel profitLabel = null;
-	private javax.swing.JTextField profitField = null;
+	private javax.swing.JFrame reportWindow= null;
 
 	
 	private ServiceAggregatorAgent serviceAggregator;
@@ -57,10 +58,6 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	class IvjEventHandler implements java.awt.event.ActionListener, java.awt.event.ItemListener, java.awt.event.WindowListener, Serializable {
 
 		public void actionPerformed(java.awt.event.ActionEvent e) {
-//			if (e.getSource() == MainWindow.this.getMoveLeftButton()) 
-//				moveOfferLeft(e);
-//			if (e.getSource() == MainWindow.this.getMoveRightButton()) 
-//				moveOfferRight(e);
 			if (e.getSource() == MainWindow.this.getAcceptButton()){ 
 				serviceAggregator.addBehaviour(serviceAggregator.new AcceptBehaviour());
 			}
@@ -75,11 +72,13 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 				enableAcceptButton();
 				enableRejectButton();
 				serviceAggregator.unautomate();
+				System.out.println("St");
 				serviceAggregator.addBehaviour(serviceAggregator.new ServiceAggStartBehaviour(serviceAggregator));
 			}
 			if(e.getSource() == MainWindow.this.getAutomatedStartButton()){
 				offer.newGame();
 				serviceAggregator.automate();
+				System.out.println("Sta");
 				serviceAggregator.addBehaviour(serviceAggregator.new ServiceAggStartBehaviour(serviceAggregator));		
 			}
 			
@@ -119,22 +118,14 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 		this.serviceAggregator= (ServiceAggregatorAgent) a;
 		initialize();
 	}
-//
-//	/**
-//	 * connEtoM1:  (JButton1.action.actionPerformed(java.awt.event.ActionEvent) --> mySpace.moveObjectLeft()Z)
-//	 * @return boolean
-//	 * @param arg1 java.awt.event.ActionEvent
-//	 */
-//	private boolean moveOfferLeft(java.awt.event.ActionEvent arg1) {
-//		boolean connEtoM1Result = false;
-//		try {
-//			connEtoM1Result = getOffer().moveObjectLeft();
-//			toggleAcceptButton(connEtoM1Result);
-//		} catch (java.lang.Throwable ivjExc) {
-//			handleException(ivjExc);
-//		}
-//		return connEtoM1Result;
-//	}
+
+	
+	public void addStats(SimpleEntry<String, Double> pair){
+		if(reportWindow == null) reportWindow= new ReportWindow();
+		((ReportWindow) reportWindow).addAgent(pair);
+		((ReportWindow) reportWindow).show();
+	}
+	
 	/**
 	 * connEtoM10:  (mySpace.action.actionPerformed(java.awt.event.ActionEvent) --> JTextField2.text)
 	 */
@@ -148,14 +139,6 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	public void updatePriceOrderTextField(String txt) {
 		try {
 			getPriceOrderTextField().setText(txt);
-		} catch (java.lang.Throwable ivjExc) {
-			handleException(ivjExc);
-		}
-	}
-	
-	public void updateProfit(String txt) {
-		try {
-			getProfitField().setText(txt);
 		} catch (java.lang.Throwable ivjExc) {
 			handleException(ivjExc);
 		}
@@ -234,10 +217,7 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	public void redAcceptButton(){
 		acceptButton.setBackground(Color.RED);
 	}
-	/**
-	 * connEtoM19:  (MyDemonstrator.window.windowClosed(java.awt.event.WindowEvent) --> mySpace.close()V)
-	 * @param arg1 java.awt.event.WindowEvent
-	 */
+	
 	private void closeApplication(java.awt.event.WindowEvent arg1) {
 		try {
 			getOffer().close();
@@ -245,24 +225,9 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 			handleException(ivjExc);
 		}
 	}
-//	/**
-//	 * connEtoM2:  (JButton2.action.actionPerformed(java.awt.event.ActionEvent) --> mySpace.moveObjectRight()Z)
-//	 * @return boolean
-//	 * @param arg1 java.awt.event.ActionEvent
-//	 */
-//	private boolean moveOfferRight(java.awt.event.ActionEvent arg1) {
-//		boolean connEtoM2Result = false;
-//		try {
-//			connEtoM2Result = getOffer().moveObjectRight();
-//			toggleAcceptButton(connEtoM2Result);
-//		} catch (java.lang.Throwable ivjExc) {
-//			handleException(ivjExc);
-//		}
-//		return connEtoM2Result;
-//	}
-	/**
-	 * connEtoM20:  (mySpace.action.actionPerformed(java.awt.event.ActionEvent) --> JTextField4.text)
-	 */
+
+
+	
 	public void updateStepTextField() {
 		try {
 			getStepTextField().setText(Integer.toString(getOffer().getStep()));
@@ -270,20 +235,6 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 			handleException(ivjExc);
 		}
 	}
-//	/**
-//	 * connEtoM21:  (MyDemonstrator.initialize() --> mySpace.notifyActionEvent()V)
-//	 */
-//	private void notifyOffer() {
-//		try {
-//			getOffer().notifyActionEvent();
-//		} catch (java.lang.Throwable ivjExc) {
-//			handleException(ivjExc);
-//		}
-//	}
-	/**
-	 * connEtoM22:  (JCheckBox1.item.itemStateChanged(java.awt.event.ItemEvent) --> mySpace.setLimitSteps(Z)V)
-	 * @param arg1 java.awt.event.ItemEvent
-	 */
 
 	private void setLimitToOffer(java.awt.event.ItemEvent arg1) {
 		try {
@@ -292,10 +243,7 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 			handleException(ivjExc);
 		}
 	}
-	/**
-	 * connEtoM3:  (mySpace.action.actionPerformed(java.awt.event.ActionEvent) --> mySpaceCanvas.repaint()V)
-	 * @param arg1 java.awt.event.ActionEvent
-	 */
+
 	public void repaintCapacityCanvas() {
 		try {
 			getCapacityCanvas().repaint();
@@ -303,10 +251,7 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 			handleException(ivjExc);
 		}
 	}
-	/**
-	 * connEtoM4:  (mySpace.action.actionPerformed(java.awt.event.ActionEvent) --> myObjectCanvas.repaint()V)
-	 * @param arg1 java.awt.event.ActionEvent
-	 */
+	
 	public void repaintOfferCanvas() {
 			getOfferCanvas().repaint();	
 	}
@@ -318,26 +263,7 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 			initLogTextArea().append(getOffer().getActiveObjectDescription());
 			initLogTextArea().append( "; false\n");
 	}
-//	/**
-//	 * Accepting a offer
-//	 * @return boolean Success of accepting an offer
-//	 */
-//	public boolean acceptActiveObject() {
-//		boolean success = false;
-//			success = getOffer().acceptActiveObject();
-//			toggleAcceptButton(success);
-//		return success;
-//	}
-//	/**
-//	 * Rejecting an offer
-//	 * @return boolean Success of rejecting an offer
-//	 */
-//	public boolean rejectActiveObject() {
-//		boolean success = false;
-//			success = getOffer().rejectActiveObject();
-//			this.toggleAcceptButton(success);
-//		return success;
-//	}
+
 	
 	/**
 	 * connEtoM9:  (mySpace.action.actionPerformed(java.awt.event.ActionEvent) --> JTextField1.text)
@@ -392,30 +318,7 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 			handleException(ivjExc);
 		}
 	}
-//	private javax.swing.JButton getMoveLeftButton() {
-//		if (moveLeftButton == null) {
-//			try {
-//				moveLeftButton = new javax.swing.JButton();
-//				moveLeftButton.setName("JButton1");
-//				moveLeftButton.setText("Move Left");
-//			} catch (java.lang.Throwable ivjExc) {
-//				handleException(ivjExc);
-//			}
-//		}
-//		return moveLeftButton;
-//	}
-//	private javax.swing.JButton getMoveRightButton() {
-//		if (moveRightButton == null) {
-//			try {
-//				moveRightButton = new javax.swing.JButton();
-//				moveRightButton.setName("JButton2");
-//				moveRightButton.setText("Move Right");
-//			} catch (java.lang.Throwable ivjExc) {
-//				handleException(ivjExc);
-//			}
-//		}
-//		return moveRightButton;
-//	}
+
 	private javax.swing.JButton getRejectButton() {
 		if (rejectButton == null) {
 			try {
@@ -505,25 +408,25 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 				mainPanel.setDoubleBuffered(true);
 				mainPanel.setVisible(true);
 
-				java.awt.GridBagConstraints constraintsmyObjectCanvas = new java.awt.GridBagConstraints();
-				constraintsmyObjectCanvas.gridx = 0; constraintsmyObjectCanvas.gridy = 0;
-				constraintsmyObjectCanvas.fill = java.awt.GridBagConstraints.BOTH;
-				constraintsmyObjectCanvas.weightx = 1.0;
-				constraintsmyObjectCanvas.weighty = 1.0;
-				constraintsmyObjectCanvas.ipadx = 237;
-				constraintsmyObjectCanvas.ipady = 187;
-				constraintsmyObjectCanvas.insets = new java.awt.Insets(0, 0, 2, 2);
-				getJFrameContentPane().add(getOfferCanvas(), constraintsmyObjectCanvas);
+				java.awt.GridBagConstraints constraintsOfferCanvas = new java.awt.GridBagConstraints();
+				constraintsOfferCanvas.gridx = 0; constraintsOfferCanvas.gridy = 0;
+				constraintsOfferCanvas.fill = java.awt.GridBagConstraints.BOTH;
+				constraintsOfferCanvas.weightx = 1.0;
+				constraintsOfferCanvas.weighty = 1.0;
+				constraintsOfferCanvas.ipadx = 237;
+				constraintsOfferCanvas.ipady = 187;
+				constraintsOfferCanvas.insets = new java.awt.Insets(0, 0, 2, 2);
+				getJFrameContentPane().add(getOfferCanvas(), constraintsOfferCanvas);
 
-				java.awt.GridBagConstraints constraintsmySpaceCanvas = new java.awt.GridBagConstraints();
-				constraintsmySpaceCanvas.gridx = 0; constraintsmySpaceCanvas.gridy = 1;
-				constraintsmySpaceCanvas.fill = java.awt.GridBagConstraints.BOTH;
-				constraintsmySpaceCanvas.weightx = 1.0;
-				constraintsmySpaceCanvas.weighty = 2.0;
-				constraintsmySpaceCanvas.ipadx = 237;
-				constraintsmySpaceCanvas.ipady = 187;
-				constraintsmySpaceCanvas.insets = new java.awt.Insets(3, 0, 1, 2);
-				getJFrameContentPane().add(getCapacityCanvas(), constraintsmySpaceCanvas);
+				java.awt.GridBagConstraints constraintsCapacityCanvas = new java.awt.GridBagConstraints();
+				constraintsCapacityCanvas.gridx = 0; constraintsCapacityCanvas.gridy = 1;
+				constraintsCapacityCanvas.fill = java.awt.GridBagConstraints.BOTH;
+				constraintsCapacityCanvas.weightx = 1.0;
+				constraintsCapacityCanvas.weighty = 2.0;
+				constraintsCapacityCanvas.ipadx = 237;
+				constraintsCapacityCanvas.ipady = 187;
+				constraintsCapacityCanvas.insets = new java.awt.Insets(3, 0, 1, 2);
+				getJFrameContentPane().add(getCapacityCanvas(), constraintsCapacityCanvas);
 
 				java.awt.GridBagConstraints constraintsJTabbedPane1 = new java.awt.GridBagConstraints();
 				constraintsJTabbedPane1.gridx = 1; constraintsJTabbedPane1.gridy = 0;
@@ -539,6 +442,12 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 		}
 		return mainPanel;
 	}
+	
+	public void showReportWindow(){
+		((ReportWindow) reportWindow).show();
+	}
+	
+	
 	private javax.swing.JLabel getPricePerResLabel() {
 		if (pricePerResLabel == null) {
 			try {
@@ -624,20 +533,6 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 				ivjJPanel1 = new javax.swing.JPanel();
 				ivjJPanel1.setName("JPanel1");
 				ivjJPanel1.setLayout(new java.awt.GridBagLayout());
-
-//				java.awt.GridBagConstraints constraintsJButton1 = new java.awt.GridBagConstraints();
-//				constraintsJButton1.gridx = 0; constraintsJButton1.gridy = 5;
-//				constraintsJButton1.fill = java.awt.GridBagConstraints.HORIZONTAL;
-//				constraintsJButton1.weightx = 1.0;
-//				constraintsJButton1.insets = new java.awt.Insets(4, 8, 4, 8);
-//				getJPanel1().add(getMoveLeftButton(), constraintsJButton1);
-//
-//				java.awt.GridBagConstraints constraintsJButton2 = new java.awt.GridBagConstraints();
-//				constraintsJButton2.gridx = 1; constraintsJButton2.gridy = 5;
-//				constraintsJButton2.fill = java.awt.GridBagConstraints.HORIZONTAL;
-//				constraintsJButton2.weightx = 1.0;
-//				constraintsJButton2.insets = new java.awt.Insets(4, 8, 4, 8);
-//				getJPanel1().add(getMoveRightButton(), constraintsJButton2);
 
 				java.awt.GridBagConstraints constraintsJButton3 = new java.awt.GridBagConstraints();
 				constraintsJButton3.gridx = 0; constraintsJButton3.gridy = 6;
@@ -745,24 +640,13 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 				constraintsAggField.weightx = 1.0;
 				constraintsAggField.insets = new java.awt.Insets(4, 4, 4, 4);
 				getJPanel1().add(this.getAggCostField(), constraintsAggField);
-//TODO
-				java.awt.GridBagConstraints constraintsProfit= new java.awt.GridBagConstraints();
-				constraintsProfit.gridx = 0; constraintsProfit.gridy = 12;
-				constraintsProfit.weightx = 1.0;
-				constraintsProfit.insets = new java.awt.Insets(4, 4, 4, 4);
-				getJPanel1().add(this.getProfitLabel(), constraintsProfit);
-
-				java.awt.GridBagConstraints constraintsProfitField= new java.awt.GridBagConstraints();
-				constraintsProfitField.gridx = 1; constraintsProfitField.gridy = 12;
-				constraintsProfitField.fill = java.awt.GridBagConstraints.HORIZONTAL;
-				constraintsProfitField.weightx = 1.0;
-				constraintsProfitField.insets = new java.awt.Insets(4, 4, 4, 4);
-				getJPanel1().add(this.getProfitField(), constraintsProfitField);
+				
 
 			} catch (java.lang.Throwable ivjExc) {
 				handleException(ivjExc);
 			}
 		}
+		
 		return ivjJPanel1;
 	}
 	
@@ -805,7 +689,6 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	 * Den Eigenschaftswert JTextArea1 zurückgeben.
 	 * @return javax.swing.JTextArea
 	 */
-	//TODO Log
 	public javax.swing.JTextArea initLogTextArea() {
 		if (logTextArea == null) {
 			try {
@@ -867,7 +750,7 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	private OfferCanvas getOfferCanvas() {
 		if (offerCanvas == null) {
 			try {
-				offerCanvas = new wendtris.OfferCanvas();
+				offerCanvas = new gui.OfferCanvas();
 				offerCanvas.setName("myObjectCanvas");
 			} catch (java.lang.Throwable ivjExc) {
 				handleException(ivjExc);
@@ -878,7 +761,7 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	private OfferFactory getOffer() {
 		if (offer == null) {
 			try {
-				offer = new wendtris.OfferFactory();
+				offer = new offer.OfferFactory();
 			} catch (java.lang.Throwable ivjExc) {
 				handleException(ivjExc);
 			}
@@ -888,7 +771,7 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	private CapacityCanvas getCapacityCanvas() {
 		if (capacityCanvas == null) {
 			try {
-				capacityCanvas = new wendtris.CapacityCanvas();
+				capacityCanvas = new gui.CapacityCanvas();
 				capacityCanvas.setName("mySpaceCanvas");
 			} catch (java.lang.Throwable ivjExc) {
 				handleException(ivjExc);
@@ -917,6 +800,7 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 		getLimitCheckBox().addItemListener(ivjEventHandler);
 	}
 	
+	@SuppressWarnings("deprecation")
 	private void initialize() {
 		try {
 			getAcceptButton().setEnabled(false);
@@ -941,32 +825,9 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	public void keyPressed(KeyEvent e) {	
 	}
 
-	public javax.swing.JLabel getProfitLabel() {
-		if (profitLabel == null) {
-			try {
-				profitLabel= new javax.swing.JLabel();
-				profitLabel.setName("JLabel4");
-				profitLabel.setText("Profit");
-			} catch (java.lang.Throwable ivjExc) {
-				handleException(ivjExc);
-			}
-		}
-		return profitLabel;
-	}
 
 	
 
-	public javax.swing.JTextField getProfitField() {
-		if (this.profitField == null) {
-			try {
-				this.profitField = new javax.swing.JTextField();
-				this.profitField.setName("ProfitTextField2");
-			} catch (java.lang.Throwable ivjExc) {
-				handleException(ivjExc);
-			}
-		}
-		return profitField;
-	}
 
 	
 }

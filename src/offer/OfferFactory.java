@@ -1,28 +1,22 @@
-package wendtris;
+package offer;
 
-import java.awt.*;
-import java.awt.event.*;
-import java.io.*;
+
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
 import jade.core.AID;
-import resourceAgent.Resource;
+import offer.Resource;
 
 
-public class OfferFactory implements Serializable {
-	public static final int left = 1, right = 2, accept = 3, reject = 4;
+public class OfferFactory {
 
 	//"Memory" of the past objects -> each cell contains a activeObjectID or 0
-	public byte[][] space = new byte[maxCols][maxRows];
+	public byte[][] history = new byte[maxCols][maxRows];
 
-	private boolean activeObjectState = false;
-	private byte activeObject[] = null;
-	private int activeObjectIncome = 1;
-	private byte activeObjectID = 0;
-	private int activeObjectPriceTag = 1;
+	private boolean state = false;
+	private byte shape[] = null;
+	private int income = 1;
+	private byte shapeId = 0;
+	private int unitPrice = 1;
 	private int ID;
 	java.util.Random random = new java.util.Random();
 
@@ -31,13 +25,15 @@ public class OfferFactory implements Serializable {
 	private int objectNumber = 0;	
 	public static int maxRows = 12, maxCols = 12;
 	
-	//Current best costs
+	//Current lowest costs
 	private HashMap<Resource, Double> bestCost;
-	//Current available agents for one resource
-	private HashMap<Resource, Set<AID>> responsibleAgentsForRes;
+	//Agents contacted for a set of resources
 	private HashMap<AID, HashSet<Resource>> contactedAgents;
+	//Proposal by all agents
+	private HashMap<AID,HashMap<Resource, Double>> agentCostsMap;
 	
-	
+	//Flag marking an object as rejected
+	private boolean rejected = false;
 	
 	//Current aggregated costs
 	private double aggCost;
@@ -57,16 +53,8 @@ public class OfferFactory implements Serializable {
 
 	private java.text.DecimalFormat df = new java.text.DecimalFormat();
 
-	private int step = 0, maxStep = 50;
-	public void setStep(int step) {
-		this.step = step;
-	}
-	public int getMaxStep() {
-		return maxStep;
-	}
-	public void setMaxStep(int maxStep) {
-		this.maxStep = maxStep;
-	}
+	private int step = 0, maxStep = 25;
+	
 	private boolean limitSteps = true;
 	public OfferFactory() {
 		super();
@@ -77,16 +65,16 @@ public class OfferFactory implements Serializable {
 	 * Setzt das aktive Objekt zurück. Damit kann das Nächste erscheinen.
 	 */
 	public boolean acceptActiveObject() {
-		for( int x=0; x<maxCols; x++) if( activeObject[x] > 0) {
+		for( int x=0; x<maxCols; x++) if( shape[x] > 0) {
 			int y = 0;
-			while( space[x][y] != 0) y++;
-			while( activeObject[x] > 0) {
-				space[x][y] = activeObjectID;
-				y++; activeObject[x]--;
+			while( history[x][y] != 0) y++;
+			while( shape[x] > 0) {
+				history[x][y] = shapeId;
+				y++; shape[x]--;
 			}
 		}
-		profit += activeObjectIncome;
-		activeObjectState = false;
+		profit += income;
+		state = false;
 		objectNumber++;
 		return true;
 	}
@@ -94,30 +82,31 @@ public class OfferFactory implements Serializable {
 	 * Ein Objekt mit der Parameterbezeichnung wird in unser Feld eingefuegt.
 	 */
 	public boolean activateObject() {
+		this.rejected=false;
 		this.bestCost = new HashMap<Resource, Double>();
 		this.aggCost = 0;
 		this.setContactedAgents(new HashMap<AID, HashSet<Resource>>());
 		ID = random.nextInt(100);
 		if( limitSteps && step>=maxStep) return false;
-		if( activeObjectState) System.out.println("Error at activeObject()");
+		if( state) System.out.println("Error at activeObject()");
 		else {
 			this.activeObjectMap = new HashMap<Resource,Byte>();
-			while( 0 == (activeObjectID = (byte)random.nextInt(thisObject.length))) {};
-			activeObject = new byte[ maxCols];
+			while( 0 == (shapeId = (byte)random.nextInt(thisObject.length))) {};
+			shape = new byte[ maxCols];
 			for( int i=0; i<maxCols; i++) 
 			{
 				//insert the contents of the two-dimensional arrays second dimension into active object at
 				//activeobjectid
-				activeObject[i] = thisObject[ activeObjectID][i];
-				if(thisObject[ activeObjectID][i]!=0){
-					this.activeObjectMap.put(Resource.allValuesAsList().get(i), thisObject[ activeObjectID][i]);
+				shape[i] = thisObject[ shapeId][i];
+				if(thisObject[ shapeId][i]!=0){
+					this.activeObjectMap.put(Resource.allValuesAsList().get(i), thisObject[ shapeId][i]);
 				}
 			}
-			activeObjectPriceTag = minPrice + random.nextInt( priceSpan);
-			activeObjectIncome = 0;
-			for( int i=0; i<maxCols; i++) activeObjectIncome += activeObject[i];
-			activeObjectIncome *= activeObjectPriceTag;
-			activeObjectState = true;
+			unitPrice = minPrice + random.nextInt( priceSpan);
+			income = 0;
+			for( int i=0; i<maxCols; i++) income += shape[i];
+			income *= unitPrice;
+			state = true;
 			++step;
 		}
 
@@ -145,61 +134,50 @@ public class OfferFactory implements Serializable {
 		System.out.println("Closing Application");
 		System.exit(0);
 	}
-	public byte[] getActiveObject() { return activeObject; }
+	public byte[] getActiveObject() { return shape; }
 	public String getActiveObjectDescription() {
-		return objectNumber+"; "+activeObjectIncome+"; "+activeObjectPriceTag+"; "+activeObjectID;
+		return objectNumber+"; "+income+"; "+unitPrice+"; "+shapeId;
 	}
-	public byte getActiveObjectID() { return activeObjectID; }
-	public int getActiveObjectIncome() { return activeObjectIncome; }
-	public int getActiveObjectPriceTag() { return activeObjectPriceTag;}
-	public boolean getActiveObjectState() { return activeObjectState; }
-	public String getFormatedActiveObjectPriceTag() { return df.format(((double)activeObjectPriceTag));}
+	public byte getActiveObjectID() { return shapeId; }
+	public int getActiveObjectIncome() { return income; }
+	public int getActiveObjectPriceTag() { return unitPrice;}
+	public boolean getActiveObjectState() { return state; }
+	public String getFormatedActiveObjectPriceTag() { return df.format(((double)unitPrice));}
 	public int getMaxPriceTag() { return minPrice+priceSpan+4; }
 	public int getProfit() { return profit; }
-
+	public void setStep(int step) {
+		this.step = step;
+	}
+	public int getMaxStep() {
+		return maxStep;
+	}
+	public void setMaxStep(int maxStep) {
+		this.maxStep = maxStep;
+	}
 	public int getStep() {
 		return step;
 	}
-	/**
-	 * Die Beschreibung der Methode hier eingeben.
-	 * Erstellungsdatum: (10.12.2002 21:32:41)
-	 * @return boolean
-	 */
 	public boolean isLimitSteps() {
 		return limitSteps;
-	}
-	/**
-	 * Alle Bewegungen der aktiven Objekte sind in dieser Methode implementiert.
-	 */
-	public boolean moveObject(int direction) {
-		if (activeObjectState) {
-			switch (direction) {
-			case accept: 
-				acceptActiveObject();
-				return true;
-
-			case reject: 
-				rejectActiveObject();
-				return true;
-
-			}
-		}
-		return false;
-	}
-	
+	}	
 	public void newGame() {
 		for( int i=0; i<maxRows; i++)
-			for( int j=0; j<maxCols; j++) space[j][i] = 0;		
+			for( int j=0; j<maxCols; j++) history[j][i] = 0;		
 		profit 		= 0;
-		activeObjectState = false;
+		state = false;
 		step		= 0;
+		this.aggCost=0;
+		this.unitPrice=1;
+		this.income=1;
+		this.rejected= false;
 	}
 
 	/**
 	 * Setzt das aktive Objekt zurück. Damit kann das Nächste erscheinen.
 	 */
 	public boolean rejectActiveObject() {
-		activeObjectState = false;
+		++step;
+		state = false;
 		objectNumber++;
 		return true;
 	}
@@ -212,11 +190,11 @@ public class OfferFactory implements Serializable {
 		limitSteps = newLimitSteps;
 	}
 	private boolean testResouces() {
-		for( int x=0; x<maxCols; x++) if( activeObject[x] > 0) {
-			if( space[x][maxRows-1] > 0) return false;
+		for( int x=0; x<maxCols; x++) if( shape[x] > 0) {
+			if( history[x][maxRows-1] > 0) return false;
 			int y = 0;
-			while( space[x][y] != 0) y++;
-			y += activeObject[x];
+			while( history[x][y] != 0) y++;
+			y += shape[x];
 			if( y > maxRows) return false;
 		}
 		return true;
@@ -230,29 +208,7 @@ public class OfferFactory implements Serializable {
 	}
 	public void putBestCost(Resource key, double value){
 		this.bestCost.put(key, value);
-	}
-	//TODO Rethink this! This is kinda bad design
-	//Also the ServiceAggregator consistently fire the calculating behaviour to early
-	//We do need a structure like that -> Informing agents of an abort? Do we really need to do that?
-	//Disabling the button would suffice actually
-	//Then we can just keep track of unique agents involved in offer proposal
-//	public HashMap<Resource, Set<AID>> getResponsibleAgentsForRes() {
-//		return responsibleAgentsForRes;
-//	}
-//	public void setResponsibleAgentsForRes(HashMap<Resource, Set<AID>> agentsResMap) {
-//		this.responsibleAgentsForRes = agentsResMap;
-//	}
-//	public void addResponsibleAgentsForRes(Resource key, AID value){
-//		if(responsibleAgentsForRes.containsKey(key)){
-//			Set<AID> agents = this.responsibleAgentsForRes.get(key);
-//			agents.add(value);
-//		}else{
-//			HashSet<AID> agents = new HashSet<AID>();
-//			agents.add(value);
-//			responsibleAgentsForRes.put(key, agents);
-//		}
-//	}
-	
+	}	
 	public void setContactedAgents(HashMap<AID, HashSet<Resource>> map) {
 		this.contactedAgents = map;
 	}
@@ -268,8 +224,6 @@ public class OfferFactory implements Serializable {
 			this.contactedAgents.put(contactedAgent, tmp);
 		}
 	}
-	
-//	
 	public double getAggCost() {
 		return aggCost;
 	}
@@ -281,5 +235,20 @@ public class OfferFactory implements Serializable {
 	}
 	public void setID(int iD) {
 		ID = iD;
+	}
+	public HashMap<AID, HashMap<Resource, Double>> getAgentCostsMap() {
+		return agentCostsMap;
+	}
+	public void setAgentCostsMap(HashMap<AID, HashMap<Resource, Double>> agentCostsMap) {
+		this.agentCostsMap = agentCostsMap;
+	}
+	public void putAgentCostsMap(AID id , HashMap<Resource, Double> agentCostsMap) {
+		this.agentCostsMap.put(id, agentCostsMap);
+	}
+	public boolean isRejected() {
+		return rejected;
+	}
+	public void setRejected(boolean rejected) {
+		this.rejected = rejected;
 	}
 }
