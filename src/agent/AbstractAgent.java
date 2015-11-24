@@ -1,5 +1,6 @@
 package agent;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -45,6 +46,11 @@ public abstract class AbstractAgent extends Agent{
 	
 	//History Information Root
 	protected Element root;
+	
+	protected DocumentBuilder db;
+	
+	
+	protected File logFile;
 	/**
 	 * Setup Method
 	 */
@@ -52,7 +58,6 @@ public abstract class AbstractAgent extends Agent{
 		//Printout a welcome message
 		try {
 			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-			DocumentBuilder db;
 			db = dbf.newDocumentBuilder();
 			doc = db.newDocument();
 		} catch (ParserConfigurationException e) {

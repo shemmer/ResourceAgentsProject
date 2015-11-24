@@ -1,16 +1,26 @@
 package gui;
 
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.event.KeyEvent;
 import java.io.Serializable;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.HashMap;
+import java.util.Hashtable;
 
+import javax.swing.BorderFactory;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JSlider;
 import javax.swing.JTextField;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import javax.swing.text.JTextComponent;
 
 import agent.serviceAgent.ServiceAggregatorAgent;
 import jade.core.Agent;
 import offer.OfferFactory;
+import offer.Resource;
 
 /**
  * Die Beschreibung des Typs hier eingeben.
@@ -26,9 +36,8 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 		this.offer = offer;
 	}
 	private CapacityCanvas capacityCanvas = null;
+	private AgentCapacityCanvas agentCanvas = null;
 	private javax.swing.JPanel ivjJPanel1 = null;
-//	private javax.swing.JButton moveLeftButton = null;
-//	private javax.swing.JButton moveRightButton = null;
 	private javax.swing.JButton rejectButton = null;
 	private javax.swing.JButton acceptButton = null;
 	private javax.swing.JButton clearButton = null;
@@ -36,10 +45,10 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	private javax.swing.JButton startAutomatedButton = null;
 	private javax.swing.JLabel pricePerResLabel = null;
 	private javax.swing.JLabel priceOrderLabel = null;
-	private javax.swing.JLabel incomeLabel = null;
+	private javax.swing.JLabel turnoverLabel = null;
 	private javax.swing.JTextField pricePerResTextField = null;
 	private javax.swing.JTextField priceOrderTextField = null;
-	private javax.swing.JTextField incomeTextField = null;
+	private javax.swing.JTextField turnOverTextField = null;
 	IvjEventHandler ivjEventHandler = new IvjEventHandler();
 	private javax.swing.JTextArea logTextArea = null;
 	private javax.swing.JScrollPane ivjJScrollPane1 = null;
@@ -52,6 +61,13 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	private javax.swing.JTextField aggCostField = null;
 	private javax.swing.JFrame reportWindow= null;
 
+	private javax.swing.JLabel incomeLbl= null;
+	private javax.swing.JTextField incomeTxtField = null;
+
+	private javax.swing.JLabel incomeTotalLbl= null;
+	private javax.swing.JTextField incomeTotalTxtField = null;
+	
+	private javax.swing.JSlider profitSlider = null;
 	
 	private ServiceAggregatorAgent serviceAggregator;
 
@@ -64,28 +80,29 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 			if (e.getSource() == MainWindow.this.getRejectButton()) {
 				serviceAggregator.addBehaviour(serviceAggregator.new RejectBehaviour(serviceAggregator));
 			}
-			if (e.getSource() == MainWindow.this.getClearResButton()){ 
+			if (e.getSource() == MainWindow.this.getClearResButton()){
+				toggleStartAutomaticButton(true);
+				toggleStartManualButton(true);
 				serviceAggregator.addBehaviour(serviceAggregator.new RestartBehaviour());
 			}
 			if(e.getSource() == MainWindow.this.getStartButton()){
 				offer.newGame();
-				enableAcceptButton();
-				enableRejectButton();
+				serviceAggregator.setMinimumProfit(profitSlider.getValue());
 				serviceAggregator.unautomate();
-				System.out.println("St");
-				serviceAggregator.addBehaviour(serviceAggregator.new ServiceAggStartBehaviour(serviceAggregator));
+				toggleStartAutomaticButton(false);
+				toggleStartManualButton(false);
+				serviceAggregator.addBehaviour(serviceAggregator.new StartBehaviour(serviceAggregator));
 			}
 			if(e.getSource() == MainWindow.this.getAutomatedStartButton()){
 				offer.newGame();
+				toggleStartAutomaticButton(false);
+				toggleStartManualButton(false);
+				serviceAggregator.setMinimumProfit(profitSlider.getValue());
 				serviceAggregator.automate();
-				System.out.println("Sta");
-				serviceAggregator.addBehaviour(serviceAggregator.new ServiceAggStartBehaviour(serviceAggregator));		
+				serviceAggregator.addBehaviour(serviceAggregator.new StartBehaviour(serviceAggregator));		
 			}
 			
 		};
-		private void enableRejectButton() {
-			getRejectButton().setEnabled(true);
-		}
 		public void itemStateChanged(java.awt.event.ItemEvent e) {
 			if (e.getSource() == MainWindow.this.getLimitCheckBox()) 
 				setLimitToOffer(e);
@@ -120,12 +137,7 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	}
 
 	
-	public void addStats(SimpleEntry<String, Double> pair){
-		if(reportWindow == null) reportWindow= new ReportWindow();
-		((ReportWindow) reportWindow).addAgent(pair);
-		((ReportWindow) reportWindow).show();
-	}
-	
+
 	/**
 	 * connEtoM10:  (mySpace.action.actionPerformed(java.awt.event.ActionEvent) --> JTextField2.text)
 	 */
@@ -146,16 +158,81 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	/**
 	 * connEtoM11:  (mySpace.action.actionPerformed(java.awt.event.ActionEvent) --> JTextField3.text)
 	 */
-	public void updateIncomeTextField() {
+	public void updateIncomeTotalTextField() {
 		try {
-			getIncomeTextField().setText(String.valueOf(getOffer().getProfit()));
+			getIncomeTotalTextField().setText(String.valueOf(getOffer().getIncomeTotal()));
 		} catch (java.lang.Throwable ivjExc) {
 			handleException(ivjExc);
 		}
 	}
-	public void updateIncomeTextField(String txt) {
+	/**
+	 * connEtoM11:  (mySpace.action.actionPerformed(java.awt.event.ActionEvent) --> JTextField3.text)
+	 */
+	public void updateTurnOverTextField() {
 		try {
-			getIncomeTextField().setText(txt);
+			getTurnOverTextField().setText(String.valueOf(getOffer().getTurnOver()));
+		} catch (java.lang.Throwable ivjExc) {
+			handleException(ivjExc);
+		}
+	}
+	public void updateIncomeTextField(double currentOfferProfit){
+		try {
+			getIncomeTextField().setText(String.valueOf(currentOfferProfit));
+		} catch (java.lang.Throwable ivjExc) {
+			handleException(ivjExc);
+		}
+	}
+	private JTextComponent getIncomeTextField() {
+		if (incomeTxtField == null) {
+			try {
+				incomeTxtField= new javax.swing.JTextField();
+				incomeTxtField.setName("JTextField3");
+			} catch (java.lang.Throwable ivjExc) {
+				handleException(ivjExc);
+			}
+		}
+		return incomeTxtField;
+	}
+	private JLabel getIncomeLabel() {
+		if (incomeLbl == null) {
+			try {
+				incomeLbl= new javax.swing.JLabel();
+				incomeLbl.setName("incomeLabel");
+				incomeLbl.setText("Income");
+			} catch (java.lang.Throwable ivjExc) {
+				handleException(ivjExc);
+			}
+		}
+		return incomeLbl;
+	}
+	
+	private JTextComponent getIncomeTotalTextField() {
+		if (incomeTotalTxtField == null) {
+			try {
+				incomeTotalTxtField= new javax.swing.JTextField();
+				incomeTotalTxtField.setName("JTextField3");
+			} catch (java.lang.Throwable ivjExc) {
+				handleException(ivjExc);
+			}
+		}
+		return incomeTotalTxtField;
+	}
+	private JLabel getIncomeTotalLabel() {
+		if (incomeTotalLbl == null) {
+			try {
+				incomeTotalLbl= new javax.swing.JLabel();
+				incomeTotalLbl.setName("incomeLabel");
+				incomeTotalLbl.setText("Income(Total)");
+			} catch (java.lang.Throwable ivjExc) {
+				handleException(ivjExc);
+			}
+		}
+		return incomeTotalLbl;
+	}
+	
+	public void updateTurnOverTextField(String txt) {
+		try {
+			getTurnOverTextField().setText(txt);
 		} catch (java.lang.Throwable ivjExc) {
 			handleException(ivjExc);
 		}
@@ -177,14 +254,10 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	 * @param arg1 java.awt.event.ActionEvent
 	 */
 	public void updateLogTextAreaAccept() {
-			initLogTextArea().append(getOffer().getActiveObjectDescription());
-			initLogTextArea().append( "; true\n");
+			initLogTextArea().append("--------------------- ACCEPTED OFFER ---------------------\n\n\n");
 		
 	}
-	/**
-	 * connEtoM13:  (JButton5.action.actionPerformed(java.awt.event.ActionEvent) --> JTextArea1.setText(Ljava.lang.String;)V)
-	 * @param arg1 java.awt.event.ActionEvent
-	 */
+	
 	private void initLogTextArea(java.awt.event.ActionEvent arg1) {
 		try {
 			initLogTextArea().setText("nr;income;priceTag; id;accepted\n");
@@ -193,24 +266,36 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 		}
 	}
 
-	/**
-	 * connEtoM17:  ( (JButton2,action.actionPerformed(java.awt.event.ActionEvent) --> mySpace,moveObjectRight()Z).normalResult --> JButton4.setEnabled(Z)V)
-	 * @param result boolean
-	 */
-	public void toggleAcceptButton(boolean result) {
+	
+	public void toggleStartManualButton(boolean result) {
 		try {
-			getAcceptButton().setEnabled(result);
+			this.getStartButton().setEnabled(result);
 		} catch (java.lang.Throwable ivjExc) {
 			handleException(ivjExc);
 		}
 	}
-	/**
-	 * connEtoM18:  (JButton5.action.actionPerformed(java.awt.event.ActionEvent) --> JButton4.enabled)
-	 * @param arg1 java.awt.event.ActionEvent
-	 */
-	public void enableAcceptButton() {
-			getAcceptButton().setEnabled(true);
+	public void toggleStartAutomaticButton(boolean result) {
+		try {
+			this.getAutomatedStartButton().setEnabled(result);
+		} catch (java.lang.Throwable ivjExc) {
+			handleException(ivjExc);
+		}
 	}
+	
+	public void toggleAcceptButton(boolean result) {
+		try {
+			this.getAcceptButton().setEnabled(result);
+		} catch (java.lang.Throwable ivjExc) {
+			handleException(ivjExc);
+		}
+	}public void toggleRejectButton(boolean result) {
+		try {
+			this.getRejectButton().setEnabled(result);
+		} catch (java.lang.Throwable ivjExc) {
+			handleException(ivjExc);
+		}
+	}
+
 	public void greenAcceptButton(){
 		acceptButton.setBackground(Color.GREEN);
 	}
@@ -230,7 +315,7 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	
 	public void updateStepTextField() {
 		try {
-			getStepTextField().setText(Integer.toString(getOffer().getStep()));
+			getStepTextField().setText(Integer.toString(getOffer().getStep()+1));
 		} catch (java.lang.Throwable ivjExc) {
 			handleException(ivjExc);
 		}
@@ -252,6 +337,31 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 		}
 	}
 	
+	public void resetAgentCanvas(){
+		try {
+			getAgentCanvas().reset();
+		} catch (java.lang.Throwable ivjExc) {
+			handleException(ivjExc);
+		}
+	}
+	public void repaintAgentCanvas() {
+		try {
+			getAgentCanvas().repaint();
+		} catch (java.lang.Throwable ivjExc) {
+			handleException(ivjExc);
+		}
+	}
+	
+	public void printAgentCanvas(){
+		getAgentCanvas().print();
+	}
+	public void addAgentToCanvas(String agent, Resource r, int totalCapacity){
+		getAgentCanvas().addAgent(agent, r, totalCapacity);
+	}
+	public void updateAgentCanvas(String agent, Resource r, int newUsedCapacity, byte color){
+		getAgentCanvas().addAgentResource(agent, r, newUsedCapacity, color);
+	}
+	
 	public void repaintOfferCanvas() {
 			getOfferCanvas().repaint();	
 	}
@@ -260,8 +370,7 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	 * @param 
 	 */
 	public void updateLogTextAreaReject() {
-			initLogTextArea().append(getOffer().getActiveObjectDescription());
-			initLogTextArea().append( "; false\n");
+		initLogTextArea().append("--------------------- REJECTED OFFER ---------------------\n\n\n");
 	}
 
 	
@@ -282,6 +391,16 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	public void updateAggCost(double aggCost) {
 		try {
 			this.getAggCostField().setText(Double.toString(aggCost));
+		} catch (java.lang.Throwable ivjExc) {
+			handleException(ivjExc);
+		}
+	}/**
+	 * Set value of Aggregated Cost
+	 * @param arg1
+	 */
+	public void updateAggCost() {
+		try {
+			this.getAggCostField().setText(Double.toString(offer.getAggCost()));
 		} catch (java.lang.Throwable ivjExc) {
 			handleException(ivjExc);
 		}
@@ -331,6 +450,29 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 		}
 		return rejectButton;
 	}
+	
+	
+	private javax.swing.JSlider getMinimumProfitSlider() {
+		if (profitSlider== null) {
+			try {
+				profitSlider= new javax.swing.JSlider(JSlider.HORIZONTAL);
+				profitSlider.setMinimum(1);
+				profitSlider.setMaximum(30);
+				Hashtable labelTable= new Hashtable();
+				labelTable.put(1, new JLabel("1"));
+				labelTable.put(10, new JLabel("10"));
+				labelTable.put(30, new JLabel("30"));
+				profitSlider.setValue(10);
+				profitSlider.setLabelTable(labelTable);
+				profitSlider.setPaintLabels(true);
+				profitSlider.setName("profitSlider");
+			} catch (java.lang.Throwable ivjExc) {
+				handleException(ivjExc);
+			}
+		}
+		return profitSlider;
+	}
+	
 	private javax.swing.JButton getAcceptButton() {
 		if (acceptButton == null) {
 			try {
@@ -426,7 +568,7 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 				constraintsCapacityCanvas.ipadx = 237;
 				constraintsCapacityCanvas.ipady = 187;
 				constraintsCapacityCanvas.insets = new java.awt.Insets(3, 0, 1, 2);
-				getJFrameContentPane().add(getCapacityCanvas(), constraintsCapacityCanvas);
+				getJFrameContentPane().add(getAgentCanvas(), constraintsCapacityCanvas);
 
 				java.awt.GridBagConstraints constraintsJTabbedPane1 = new java.awt.GridBagConstraints();
 				constraintsJTabbedPane1.gridx = 1; constraintsJTabbedPane1.gridy = 0;
@@ -472,17 +614,17 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 		}
 		return priceOrderLabel;
 	}
-	private javax.swing.JLabel getIncomeLabel() {
-		if (incomeLabel == null) {
+	private javax.swing.JLabel getTurnOverLabel() {
+		if (turnoverLabel == null) {
 			try {
-				incomeLabel = new javax.swing.JLabel();
-				incomeLabel.setName("JLabel3");
-				incomeLabel.setText("Income");
+				turnoverLabel = new javax.swing.JLabel();
+				turnoverLabel.setName("JLabel3");
+				turnoverLabel.setText("Turnover");
 			} catch (java.lang.Throwable ivjExc) {
 				handleException(ivjExc);
 			}
 		}
-		return incomeLabel;
+		return turnoverLabel;
 	}
 	private javax.swing.JLabel getStepLabel() {
 		if (stepLabel == null) {
@@ -533,43 +675,11 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 				ivjJPanel1 = new javax.swing.JPanel();
 				ivjJPanel1.setName("JPanel1");
 				ivjJPanel1.setLayout(new java.awt.GridBagLayout());
-
-				java.awt.GridBagConstraints constraintsJButton3 = new java.awt.GridBagConstraints();
-				constraintsJButton3.gridx = 0; constraintsJButton3.gridy = 6;
-				constraintsJButton3.fill = java.awt.GridBagConstraints.HORIZONTAL;
-				constraintsJButton3.weightx = 1.0;
-				constraintsJButton3.insets = new java.awt.Insets(4, 8, 4, 8);
-				getJPanel1().add(getRejectButton(), constraintsJButton3);
-
-				java.awt.GridBagConstraints constraintsJButton4 = new java.awt.GridBagConstraints();
-				constraintsJButton4.gridx = 1; constraintsJButton4.gridy = 6;
-				constraintsJButton4.fill = java.awt.GridBagConstraints.HORIZONTAL;
-				constraintsJButton4.weightx = 1.0;
-				constraintsJButton4.insets = new java.awt.Insets(4, 8, 4, 8);
-				getJPanel1().add(getAcceptButton(), constraintsJButton4);
-
-				java.awt.GridBagConstraints constraintsJButton5 = new java.awt.GridBagConstraints();
-				constraintsJButton5.gridx = 0; constraintsJButton5.gridy = 7;
-				constraintsJButton5.gridwidth = 2;
-				constraintsJButton5.fill = java.awt.GridBagConstraints.HORIZONTAL;
-				constraintsJButton5.insets = new java.awt.Insets(4, 8, 4, 8);
-				getJPanel1().add(getClearResButton(), constraintsJButton5);
-
-				java.awt.GridBagConstraints constraintsStartButton = new java.awt.GridBagConstraints();
-				constraintsStartButton.gridx = 0; constraintsStartButton.gridy = 5;
-				constraintsStartButton.weightx = 2;
-				constraintsStartButton.fill = java.awt.GridBagConstraints.HORIZONTAL;
-				constraintsStartButton.insets = new java.awt.Insets(4, 8, 4, 8);
-				getJPanel1().add(getStartButton(), constraintsStartButton );
-
-				java.awt.GridBagConstraints constraintsAutomatedStartButton = new java.awt.GridBagConstraints();
-				constraintsAutomatedStartButton .gridx = 1; constraintsAutomatedStartButton .gridy = 5;
-				constraintsAutomatedStartButton .weightx= 2;
-				constraintsAutomatedStartButton .fill = java.awt.GridBagConstraints.HORIZONTAL;
-				constraintsAutomatedStartButton .insets = new java.awt.Insets(4, 8, 4, 8);
-				getJPanel1().add(getAutomatedStartButton(), constraintsAutomatedStartButton );
-//				
 				
+				
+				/**
+				 * Price Per Res Unit
+				 */
 				java.awt.GridBagConstraints constraintsJTextField1 = new java.awt.GridBagConstraints();
 				constraintsJTextField1.gridx = 1; constraintsJTextField1.gridy = 0;
 				constraintsJTextField1.fill = java.awt.GridBagConstraints.HORIZONTAL;
@@ -582,6 +692,10 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 				constraintsJLabel1.weightx = 1.0;
 				constraintsJLabel1.insets = new java.awt.Insets(4, 4, 4, 4);
 				getJPanel1().add(getPricePerResLabel(), constraintsJLabel1);
+				
+				/**
+				 * Price for this order
+				 */
 
 				java.awt.GridBagConstraints constraintsJLabel2 = new java.awt.GridBagConstraints();
 				constraintsJLabel2.gridx = 0; constraintsJLabel2.gridy = 1;
@@ -589,11 +703,6 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 				constraintsJLabel2.insets = new java.awt.Insets(4, 4, 4, 4);
 				getJPanel1().add(getPriceOrderLabel(), constraintsJLabel2);
 
-				java.awt.GridBagConstraints constraintsJLabel3 = new java.awt.GridBagConstraints();
-				constraintsJLabel3.gridx = 0; constraintsJLabel3.gridy = 2;
-				constraintsJLabel3.weightx = 1.0;
-				constraintsJLabel3.insets = new java.awt.Insets(4, 4, 4, 4);
-				getJPanel1().add(getIncomeLabel(), constraintsJLabel3);
 
 				java.awt.GridBagConstraints constraintsJTextField2 = new java.awt.GridBagConstraints();
 				constraintsJTextField2.gridx = 1; constraintsJTextField2.gridy = 1;
@@ -601,47 +710,163 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 				constraintsJTextField2.weightx = 1.0;
 				constraintsJTextField2.insets = new java.awt.Insets(4, 4, 4, 4);
 				getJPanel1().add(getPriceOrderTextField(), constraintsJTextField2);
+				
+				/**
+				 *  Minimum Income for an order
+				 */
+				java.awt.GridBagConstraints constraintsSlider= new java.awt.GridBagConstraints();
+				constraintsSlider.gridx = 0; constraintsSlider.gridy = 2;
+				constraintsSlider.gridwidth = 2;
+				constraintsSlider.fill = java.awt.GridBagConstraints.HORIZONTAL;
+				constraintsSlider.insets = new java.awt.Insets(4, 4, 4, 4);
+				getJPanel1().add(this.getMinimumProfitSlider(), constraintsSlider);
+				
+				
+				this.getMinimumProfitSlider().setBorder(
+						BorderFactory.createTitledBorder("Minimum Income per Order"));
+			
+				
+				/**
+				 * Aggregated Costs for this order
+				 */
+				java.awt.GridBagConstraints constraintsAggCost = new java.awt.GridBagConstraints();
+				constraintsAggCost.gridx = 0; constraintsAggCost.gridy = 3;
+				constraintsAggCost.weightx = 1.0;
+				constraintsAggCost.insets = new java.awt.Insets(4, 4, 4, 4);
+				getJPanel1().add(this.getAggCostLabel(), constraintsAggCost);
 
-				java.awt.GridBagConstraints constraintsJTextField3 = new java.awt.GridBagConstraints();
-				constraintsJTextField3.gridx = 1; constraintsJTextField3.gridy = 2;
-				constraintsJTextField3.fill = java.awt.GridBagConstraints.HORIZONTAL;
-				constraintsJTextField3.weightx = 1.0;
-				constraintsJTextField3.insets = new java.awt.Insets(4, 4, 4, 4);
-				getJPanel1().add(getIncomeTextField(), constraintsJTextField3);
+				java.awt.GridBagConstraints constraintsAggField= new java.awt.GridBagConstraints();
+				constraintsAggField.gridx = 1; constraintsAggField.gridy = 3;
+				constraintsAggField.fill = java.awt.GridBagConstraints.HORIZONTAL;
+				constraintsAggField.weightx = 1.0;
+				constraintsAggField.insets = new java.awt.Insets(4, 4, 4, 4);
+				getJPanel1().add(this.getAggCostField(), constraintsAggField);
+
+				
+				
+				
+				/**
+				 * Income for this order
+				 */
+				java.awt.GridBagConstraints constraintsIncomeOrderLbl = new java.awt.GridBagConstraints();
+				constraintsIncomeOrderLbl.gridx = 0; constraintsIncomeOrderLbl.gridy =4;
+				constraintsIncomeOrderLbl.weightx = 1.0;
+				constraintsIncomeOrderLbl.insets = new java.awt.Insets(4, 4, 4, 4);
+				getJPanel1().add(getIncomeLabel(), constraintsIncomeOrderLbl);
+
+				java.awt.GridBagConstraints constraintsIncomeOrderTxtField = new java.awt.GridBagConstraints();
+				constraintsIncomeOrderTxtField.gridx = 1; constraintsIncomeOrderTxtField.gridy = 4;
+				constraintsIncomeOrderTxtField.fill = java.awt.GridBagConstraints.HORIZONTAL;
+				constraintsIncomeOrderTxtField.weightx = 1.0;
+				constraintsIncomeOrderTxtField.insets = new java.awt.Insets(4, 4, 4, 4);
+				getJPanel1().add(getIncomeTextField(), constraintsIncomeOrderTxtField);
+				
+
+				/**
+				 * Steps/Limited
+				 */
 
 				java.awt.GridBagConstraints constraintsJLabel4 = new java.awt.GridBagConstraints();
-				constraintsJLabel4.gridx = 0; constraintsJLabel4.gridy = 3;
+				constraintsJLabel4.gridx = 0; constraintsJLabel4.gridy = 5;
 				constraintsJLabel4.insets = new java.awt.Insets(4, 4, 4, 4);
 				getJPanel1().add(getStepLabel(), constraintsJLabel4);
-
+				
 				java.awt.GridBagConstraints constraintsJTextField4 = new java.awt.GridBagConstraints();
-				constraintsJTextField4.gridx = 1; constraintsJTextField4.gridy = 3;
+				constraintsJTextField4.gridx = 1; constraintsJTextField4.gridy = 5;
 				constraintsJTextField4.fill = java.awt.GridBagConstraints.HORIZONTAL;
 				constraintsJTextField4.weightx = 1.0;
 				constraintsJTextField4.insets = new java.awt.Insets(4, 4, 4, 4);
 				getJPanel1().add(getStepTextField(), constraintsJTextField4);
 
 				java.awt.GridBagConstraints constraintsJCheckBox1 = new java.awt.GridBagConstraints();
-				constraintsJCheckBox1.gridx = 0; constraintsJCheckBox1.gridy = 4;
+				constraintsJCheckBox1.gridx = 0; constraintsJCheckBox1.gridy = 6;
 				constraintsJCheckBox1.gridwidth = 2;
 				constraintsJCheckBox1.fill = java.awt.GridBagConstraints.HORIZONTAL;
 				constraintsJCheckBox1.insets = new java.awt.Insets(4, 4, 4, 4);
 				getJPanel1().add(getLimitCheckBox(), constraintsJCheckBox1);
-				//Custom Code
-				java.awt.GridBagConstraints constraintsAggCost = new java.awt.GridBagConstraints();
-				constraintsAggCost.gridx = 0; constraintsAggCost.gridy = 10;
-				constraintsAggCost.weightx = 1.0;
-				constraintsAggCost.insets = new java.awt.Insets(4, 4, 4, 4);
-				getJPanel1().add(this.getAggCostLabel(), constraintsAggCost);
+				
+				/**
+				 * Start Buttons
+				 */
+				java.awt.GridBagConstraints constraintsStartButton = new java.awt.GridBagConstraints();
+				constraintsStartButton.gridx = 0; constraintsStartButton.gridy = 7;
+				constraintsStartButton.weightx = 2;
+				constraintsStartButton.fill = java.awt.GridBagConstraints.HORIZONTAL;
+				constraintsStartButton.insets = new java.awt.Insets(4, 8, 4, 8);
+				getJPanel1().add(getStartButton(), constraintsStartButton );
 
-				java.awt.GridBagConstraints constraintsAggField= new java.awt.GridBagConstraints();
-				constraintsAggField.gridx = 1; constraintsAggField.gridy = 10;
-				constraintsAggField.fill = java.awt.GridBagConstraints.HORIZONTAL;
-				constraintsAggField.weightx = 1.0;
-				constraintsAggField.insets = new java.awt.Insets(4, 4, 4, 4);
-				getJPanel1().add(this.getAggCostField(), constraintsAggField);
+				java.awt.GridBagConstraints constraintsAutomatedStartButton = new java.awt.GridBagConstraints();
+				constraintsAutomatedStartButton .gridx = 1; constraintsAutomatedStartButton .gridy = 7;
+				constraintsAutomatedStartButton .weightx= 2;
+				constraintsAutomatedStartButton .fill = java.awt.GridBagConstraints.HORIZONTAL;
+				constraintsAutomatedStartButton .insets = new java.awt.Insets(4, 8, 4, 8);
+				getJPanel1().add(getAutomatedStartButton(), constraintsAutomatedStartButton );			
+			
+				
+				/**
+				 * Accept/Reject Buttons
+				 */
+				java.awt.GridBagConstraints constraintsJButton3 = new java.awt.GridBagConstraints();
+				constraintsJButton3.gridx = 0; constraintsJButton3.gridy = 8;
+				constraintsJButton3.fill = java.awt.GridBagConstraints.HORIZONTAL;
+				constraintsJButton3.weightx = 1.0;
+				constraintsJButton3.insets = new java.awt.Insets(4, 8, 4, 8);
+				getJPanel1().add(getRejectButton(), constraintsJButton3);
+
+				java.awt.GridBagConstraints constraintsJButton4 = new java.awt.GridBagConstraints();
+				constraintsJButton4.gridx = 1; constraintsJButton4.gridy = 8;
+				constraintsJButton4.fill = java.awt.GridBagConstraints.HORIZONTAL;
+				constraintsJButton4.weightx = 1.0;
+				constraintsJButton4.insets = new java.awt.Insets(4, 8, 4, 8);
+				getJPanel1().add(getAcceptButton(), constraintsJButton4);
+
+				
+				/**
+				 * Turnover
+				 */
+				java.awt.GridBagConstraints constraintsJLabel3 = new java.awt.GridBagConstraints();
+				constraintsJLabel3.gridx = 0; constraintsJLabel3.gridy = 9;
+				constraintsJLabel3.weightx = 1.0;
+				constraintsJLabel3.insets = new java.awt.Insets(4, 4, 4, 4);
+				getJPanel1().add(getTurnOverLabel(), constraintsJLabel3);
+
+				java.awt.GridBagConstraints constraintsJTextField3 = new java.awt.GridBagConstraints();
+				constraintsJTextField3.gridx = 1; constraintsJTextField3.gridy = 9;
+				constraintsJTextField3.fill = java.awt.GridBagConstraints.HORIZONTAL;
+				constraintsJTextField3.weightx = 1.0;
+				constraintsJTextField3.insets = new java.awt.Insets(4, 4, 4, 4);
+				getJPanel1().add(getTurnOverTextField(), constraintsJTextField3);
+
+				
+				/**
+				 * Income
+				 */
+				java.awt.GridBagConstraints constraintsIncomeLbl = new java.awt.GridBagConstraints();
+				constraintsIncomeLbl.gridx = 0; constraintsIncomeLbl.gridy =10;
+				constraintsIncomeLbl.weightx = 1.0;
+				constraintsIncomeLbl.insets = new java.awt.Insets(4, 4, 4, 4);
+				getJPanel1().add(getIncomeTotalLabel(), constraintsIncomeLbl);
+
+				java.awt.GridBagConstraints constraintsIncomeTxtField = new java.awt.GridBagConstraints();
+				constraintsIncomeTxtField.gridx = 1; constraintsIncomeTxtField.gridy = 10;
+				constraintsIncomeTxtField.fill = java.awt.GridBagConstraints.HORIZONTAL;
+				constraintsIncomeTxtField.weightx = 1.0;
+				constraintsIncomeTxtField.insets = new java.awt.Insets(4, 4, 4, 4);
+				getJPanel1().add(getIncomeTotalTextField(), constraintsIncomeTxtField);
 				
 
+				/**
+				 * Reset
+				 */
+				java.awt.GridBagConstraints constraintsJButton5 = new java.awt.GridBagConstraints();
+				constraintsJButton5.gridx = 0; constraintsJButton5.gridy = 11;
+				constraintsJButton5.gridwidth = 2;
+				constraintsJButton5.fill = java.awt.GridBagConstraints.HORIZONTAL;
+				constraintsJButton5.insets = new java.awt.Insets(4, 8, 4, 8);
+				getJPanel1().add(getClearResButton(), constraintsJButton5);
+
+				
+				
 			} catch (java.lang.Throwable ivjExc) {
 				handleException(ivjExc);
 			}
@@ -694,7 +919,6 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 			try {
 				logTextArea = new javax.swing.JTextArea();
 				logTextArea.setName("JTextArea1");
-				logTextArea.setText("nr; income; priceTag; id; accepted\n");
 				logTextArea.setBounds(0, 0, 163, 197);
 				logTextArea.setEditable(false);
 			} catch (java.lang.Throwable ivjExc) {
@@ -725,16 +949,16 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 		}
 		return priceOrderTextField;
 	}
-	private javax.swing.JTextField getIncomeTextField() {
-		if (incomeTextField == null) {
+	private javax.swing.JTextField getTurnOverTextField() {
+		if (turnOverTextField == null) {
 			try {
-				incomeTextField = new javax.swing.JTextField();
-				incomeTextField.setName("JTextField3");
+				turnOverTextField = new javax.swing.JTextField();
+				turnOverTextField.setName("JTextField3");
 			} catch (java.lang.Throwable ivjExc) {
 				handleException(ivjExc);
 			}
 		}
-		return incomeTextField;
+		return turnOverTextField;
 	}
 	private javax.swing.JTextField getStepTextField() {
 		if (stepTextField == null) {
@@ -779,6 +1003,17 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 		}
 		return capacityCanvas;
 	}
+	private AgentCapacityCanvas getAgentCanvas() {
+		if (agentCanvas == null) {
+			try {
+				agentCanvas = new AgentCapacityCanvas();
+				agentCanvas.setName("myAgentCanvas");
+			} catch (java.lang.Throwable ivjExc) {
+				handleException(ivjExc);
+			}
+		}
+		return agentCanvas;
+	}
 	private void handleException(java.lang.Throwable exception) {
 		exception.printStackTrace(System.out);
 	}
@@ -788,12 +1023,14 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	 */
 	private void initListeners() throws java.lang.Exception {
 		this.addKeyListener(this);
-//		getMoveLeftButton().addActionListener(ivjEventHandler);
-//		getMoveRightButton().addActionListener(ivjEventHandler);
+		this.getMinimumProfitSlider().addChangeListener(new ChangeListener() {
+		      public void stateChanged(ChangeEvent e) {
+		    	  serviceAggregator.setMinimumProfit(getMinimumProfitSlider().getValue());
+		      }
+		    });
 		getAcceptButton().addActionListener(ivjEventHandler);
 		getRejectButton().addActionListener(ivjEventHandler);
 		getClearResButton().addActionListener(ivjEventHandler);
-//		getOffer().addActionListener(ivjEventHandler);
 		getStartButton().addActionListener(ivjEventHandler);
 		this.getAutomatedStartButton().addActionListener(ivjEventHandler);
 		this.addWindowListener(ivjEventHandler);
@@ -803,13 +1040,14 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	@SuppressWarnings("deprecation")
 	private void initialize() {
 		try {
+			setMinimumSize(new Dimension(100,100));
 			getAcceptButton().setEnabled(false);
 			getRejectButton().setEnabled(false);
 			setName("MyDemonstrator");
 			setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 			setVisible(true);
 			setFont(new java.awt.Font("dialog", 0, 10));
-			setSize(500, 400);
+			this.setExtendedState(JFrame.MAXIMIZED_BOTH);
 			setTitle("Resource Allocator");
 			setContentPane(getJFrameContentPane());
 			initListeners();
@@ -825,9 +1063,25 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	public void keyPressed(KeyEvent e) {	
 	}
 
-
-	
-
-
+	public void addStats(String agent, String content) {
+		System.err.println("AddStats" +  agent);
+		if(reportWindow == null)
+		{
+			reportWindow= new ReportWindow();
+			reportWindow.setVisible(true);
+		}
+		((ReportWindow) reportWindow).addAgent(agent, content);
+		
+	}
+	public void addEmpty() {
+		if(reportWindow == null)
+		{
+			return;
+//			reportWindow= new ReportWindow();
+//			reportWindow.setVisible(true);
+		}
+		((ReportWindow) reportWindow).addEmpty();
+		
+	}
 	
 }

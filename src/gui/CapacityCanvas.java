@@ -49,7 +49,9 @@ public class CapacityCanvas extends javax.swing.JPanel {
 
 		double xDist = ((double)xPaint)/maxCols, yDist = ((double)yPaint)/maxRows;
 
+		//I = resourcen
 		for( int i=0; i<maxCols; i++){ 
+			//J= farben
 			for( int j=0; j<maxRows; j++) {
 				if( offer.history[i][j]!=0) {
 					g2d.setColor( color[offer.history[i][j]] );
@@ -57,14 +59,10 @@ public class CapacityCanvas extends javax.swing.JPanel {
 				}
 			}
 		}
-		g2d.setColor(Color.black);
-		at.rotate( -Math.PI/2, y/2, y/2);
-		g2d.transform(at);
-		g2d.drawString("test", 100, 100);
 
 		g2d.setColor(Color.black);
 		// Rotate 90 degrees clockwise about the position (x, y)
-		at.rotate( Math.PI/2, y/2, y/2);
+		at.rotate( -Math.PI/2, y/2, y/2);
 		g2d.transform(at);
 
 		// Draw the string at the position (x, y)
