@@ -133,7 +133,6 @@ public class AgentCapacityCanvas extends JPanel {
 			if(usedCapacity[tmpj]==0) break;
 			tmpj++;
 		}
-		System.out.println(agent + " ." +tmpj + "new " + newUsedCapacity + "usedCapacity " +  usedCapacity.length);
 		if(this.agentResCapacityMap.get(agent).get(r).length< tmpj + newUsedCapacity){
 			byte[] tmp = new byte[this.agentResCapacityMap.get(agent).get(r).length + newUsedCapacity];
 			for(int i=0; i<this.agentResCapacityMap.get(agent).get(r).length ;i++){

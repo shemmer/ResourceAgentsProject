@@ -343,12 +343,10 @@ public class ServiceAggregatorAgent extends AbstractAgent{
 			posReplies = new HashSet<ACLMessage>();
 			HashMap<AID, Double> best = new HashMap<AID, Double>();
 			//For every element of the offer
-			System.out.println(offer.getActiveObjectMap().keySet());
 			for(Resource r : offer.getActiveObjectMap().keySet()){
 				if(r== Resource.DUMMY || r== Resource.DUMMY_MAX || r== Resource.ID) continue;
 				HashMap<Integer, HashMap<AID, Double>> currentOffers =offer.getAgentCostsDivMap().get(r);
 				for(int i =1 ; i<= currentOffers.size(); i++){
-					System.out.println(r+":" + " ["+ i+"] "+ (offer.getActiveObjectMap().get(r)-i));
 					if(currentOffers.containsKey(i)){
 						int requestCapacity = offer.getActiveObjectMap().get(r);
 						int openCapacity = requestCapacity - i;

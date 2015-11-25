@@ -1064,7 +1064,6 @@ public class MainWindow extends javax.swing.JFrame implements java.awt.event.Key
 	}
 
 	public void addStats(String agent, String content) {
-		System.err.println("AddStats" +  agent);
 		if(reportWindow == null)
 		{
 			reportWindow= new ReportWindow();

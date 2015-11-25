@@ -428,14 +428,11 @@ public class ResourceAgent extends AbstractAgent{
 				}else{
 					//Remaining capacity information
 					if(currentCapacityMap.get(r)/6< 0.5){
-						calculatedCosts = calculatedCosts * (2- currentCapacityMap.get(r)/6);
+						calculatedCosts = calculatedCosts * (2- currentCapacityMap.get(r)/initialCapacityMap.get(r));
 					}
 				}
-					
-//				byte quantity = offer.get(r);
-//				double totalCost = quantity * calculatedCosts;
 				currentCalcBaseCostMap.put(r, calculatedCosts);
-				//XML Stuff
+				//XML Negotiating History
 				Element resElement = doc.createElement(r.toString());
 				resElement.setAttribute("size" ,offer.get(r).toString());
 				resElement.setAttribute("capacity", currentCapacityMap.get(r).toString());
@@ -463,7 +460,6 @@ public class ResourceAgent extends AbstractAgent{
 					}
 				}
 			}
-//			System.out.println(this.myAgent.getLocalName()+":"+reqReply);
 			ACLMessage msg = new ACLMessage(ACLMessage.PROPOSE);
 			msg.setSender(this.myAgent.getAID());
 			msg.setLanguage("Java");
